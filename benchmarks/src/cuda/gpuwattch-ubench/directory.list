@@ -7,6 +7,6 @@ mix_benchmarks
 #hysoonkim
 #SDK
 #RODINIA
-#performance_benchmarks
+performance_benchmarks
 #RODINIA-FT
 #CUDA

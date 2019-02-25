@@ -1,16 +1,32 @@
+#!/bin/sh
+
+# Updated FEB 25 2019:
+# Notes on usage:
+# The script has been updated to no longer require CUDA 4.2. Any version of CUDA should work. 
+# You must manually set NVIDIA_COMPUTE_SDK_LOCATION and CUDA_INSTALL_PATH before running this script
+# for it to function correctly. They should point to the location of the SDK samples the and toolkit, 
+# respectively. Both can be downloaded from NVIDIA's website if you do not have them.
 
 export GPGPUSIM_BENCHMARKS_SETUP_ENVIRONMENT_WAS_RUN=
 export GPGPUSIM_BENCH_ROOT="$( cd "$( dirname "$BASH_SOURCE" )" && pwd )"
 
-if [ ! -d $NVIDIA_COMPUTE_SDK_LOCATION/../4.2 ]; then
-    echo "SDK 4.2 Not detected - installing and building"
-    if [ ! -f ./gpucomputingsdk_4.2.9_linux.run ]; then
-        wget http://developer.download.nvidia.com/compute/cuda/4_2/rel/sdk/gpucomputingsdk_4.2.9_linux.run
-    fi
-    chmod u+x gpucomputingsdk_4.2.9_linux.run
-    ./gpucomputingsdk_4.2.9_linux.run -- --prefix=`pwd`/4.2 --cudaprefix=$CUDA_INSTALL_PATH
-    export NVIDIA_COMPUTE_SDK_LOCATION=`pwd`/4.2
-    make -j -i -C $NVIDIA_COMPUTE_SDK_LOCATION/
+#if [ ! -d $NVIDIA_COMPUTE_SDK_LOCATION/../4.2 ]; then
+#    echo "SDK 4.2 Not detected - installing and building"
+#    if [ ! -f ./gpucomputingsdk_4.2.9_linux.run ]; then
+#        wget http://developer.download.nvidia.com/compute/cuda/4_2/rel/sdk/gpucomputingsdk_4.2.9_linux.run
+#    fi
+#    chmod u+x gpucomputingsdk_4.2.9_linux.run
+#    ./gpucomputingsdk_4.2.9_linux.run -- --prefix=`pwd`/4.2 --cudaprefix=$CUDA_INSTALL_PATH
+#    export NVIDIA_COMPUTE_SDK_LOCATION=`pwd`/4.2
+#    make -j -i -C $NVIDIA_COMPUTE_SDK_LOCATION/
+#fi
+
+if [ ! -n "$NVIDIA_COMPUTE_SDK_LOCATION" ]; then
+    echo "ERROR *** NVIDIA_COMPUTE_SDK_LOCATION not set;"
+    return
+elif [ ! -d "$NVIDIA_COMPUTE_SDK_LOCATION" ]; then
+    echo "ERROR *** NVIDIA_COMPUTE_SDK_LOCATION=$NVIDIA_COMPUTE_SDK_LOCATION invalid. directory does not exist.";
+    return
 fi
 
 if [ ! -n "$CUDA_INSTALL_PATH" ]; then
