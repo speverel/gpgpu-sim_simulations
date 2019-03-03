@@ -13,13 +13,18 @@ export NVIDIA_COMPUTE_SDK_LOCATION=<Version 9.1 is tested>
 source setup_environment
 make -i -j all
 make data
-make -i -j power
 ```
 
 To see how many apps built:
 ```bash
 ls ../bin/9.1/release/ | wc
 ```
+
+To make power uBenchmarks:
+```
+make -i -j power
+```
+
 To clean power uBenchmarks:
 ```
 make -i -j clean_power
