@@ -12,7 +12,7 @@ endif
 
 #Disable clean for now, It has a bug!
 # clean_dragon-naive clean_pannotia clean_proxy-apps
-clean: clean_rodinia_2.0-ft clean_dragon-cdp  clean_ispass-2009 clean_lonestargpu-2.0 clean_custom_apps clean_parboil
+clean: clean_rodinia_2.0-ft clean_dragon-cdp  clean_ispass-2009 clean_lonestargpu-2.0 clean_custom_apps clean_parboil clean_power
 
 clean_data:
 	./clean_data.sh
@@ -280,9 +280,11 @@ custom_apps:
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C cuda/custom-apps/sdk-matrixMul-modified/
 
 power:
-	$(SETENV) make $(MAKE_ARGS) PWRTYPE=SM noinline=$(noinline) -C cuda/gpuwattch-ubench/ power
-	$(SETENV) make $(MAKE_ARGS) PWRTYPE=HW noinline=$(noinline) -C cuda/gpuwattch-ubench/ power
+	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C cuda/gpuwattch-ubench/ power
 
+clean_power:
+	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C cuda/gpuwattch-ubench/ cleanpower
+ 
 clean_custom_apps:
 	make clean -C cuda/custom-apps/shoc-modified-spmv/
 	make clean -C cuda/custom-apps/rodinia-kmn-no-tex/
