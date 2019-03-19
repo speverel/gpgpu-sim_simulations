@@ -1,34 +1,26 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <cutil.h>
 // Includes
 #include <stdio.h>
+#include <stdlib.h>
 
-// includes, project
-#include <sdkHelper.h>  // helper for shared functions common to CUDA SDK samples
-//#include <shrQATest.h>
-//#include <shrUtils.h>
 
 // includes CUDA
 #include <cuda_runtime.h>
-#include "../include/ContAcq-IntClk.h"
 
 #define THREADS_PER_BLOCK 256
-#define NUM_OF_BLOCKS 60
-#define ITERATIONS REPLACE_ITERATIONS
+#define NUM_OF_BLOCKS 640
+
 
 // Variables
 unsigned* h_A;
 unsigned* h_C;
 unsigned* d_A;
 unsigned* d_C;
-bool noprompt = false;
-unsigned int my_timer;
+
 
 // Functions
 void CleanupResources(void);
 void RandomInit(unsigned*, int);
-void ParseArguments(int, char**);
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // These are CUDA Helper functions
@@ -62,14 +54,14 @@ inline void __getLastCudaError(const char *errorMessage, const char *file, const
 
 
 // Device code
-__global__ void PowerKernal(const unsigned* A,unsigned* C)
+__global__ void PowerKernal(const unsigned* A,unsigned* C, int iterations)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     //Do Some Computation
     unsigned I1=A[i];
 
     //Excessive Logical Unit access
-    for(unsigned k=0; k<ITERATIONS*(blockDim.x+1000);k++) {
+    for(unsigned k=0; k<iterations*(blockDim.x+1000);k++) {
     // BLOCK-0 (For instruction size of 8 bytes and Block size of 32KB 	
     	__asm volatile (
     			"B0: bra.uni B1;\n\t"
@@ -115,9 +107,19 @@ __global__ void PowerKernal(const unsigned* A,unsigned* C)
 
 // Host code
 
-int main()
+int main(int argc, char** argv) 
 {
- printf("Power Microbenchmarks\n");
+
+  int iterations;
+  if (argc != 2){
+    fprintf(stderr,"usage: %s #iterations\n",argv[0]);
+    exit(1);
+  }
+  else{
+    iterations = atoi(argv[1]);
+  }
+
+  printf("Power Microbenchmark with %d iterations\n",iterations);
  int N = THREADS_PER_BLOCK*NUM_OF_BLOCKS;
  size_t size = N * sizeof(unsigned);
  // Allocate input vectors h_A and h_B in host memory
@@ -136,28 +138,28 @@ int main()
  // Copy vectors from host memory to device memory
  checkCudaErrors( cudaMemcpy(d_A, h_A, size, cudaMemcpyHostToDevice) );
 
- //VecAdd<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C, N);
+ cudaEvent_t start, stop;
+ float elapsedTime = 0;
+ checkCudaErrors(cudaEventCreate(&start));
+ checkCudaErrors(cudaEventCreate(&stop));
  dim3 dimGrid(NUM_OF_BLOCKS,1);
  dim3 dimBlock(THREADS_PER_BLOCK,1);
 
-CUT_SAFE_CALL(cutCreateTimer(&my_timer)); 
-TaskHandle taskhandle = LaunchDAQ();
-CUT_SAFE_CALL(cutStartTimer(my_timer)); 
- PowerKernal<<<dimGrid,dimBlock>>>(d_A,d_C);
+ checkCudaErrors(cudaEventRecord(start));
+ PowerKernal<<<dimGrid,dimBlock>>>(d_A,d_C, iterations);
+ checkCudaErrors(cudaEventRecord(stop));
+
+ checkCudaErrors(cudaEventSynchronize(stop));
+ checkCudaErrors(cudaEventElapsedTime(&elapsedTime, start, stop));
+ printf("gpu execution time = %.2f s\n", elapsedTime/1000);
 
  getLastCudaError("kernel launch failure");
-CUDA_SAFE_CALL( cudaThreadSynchronize() );
-CUT_SAFE_CALL(cutStopTimer(my_timer));
-TurnOffDAQ(taskhandle, cutGetTimerValue(my_timer));
-printf("execution time = %f\n", cutGetTimerValue(my_timer));
-CUT_SAFE_CALL(cutDeleteTimer(my_timer)); 
-
-#ifdef _DEBUG
- checkCudaErrors( cudaDeviceSynchronize() );
-#endif
+ cudaThreadSynchronize();
 
  // Copy result from device memory to host memory
  // h_C contains the result in host memory
+ checkCudaErrors(cudaEventDestroy(start));
+ checkCudaErrors(cudaEventDestroy(stop));
  checkCudaErrors( cudaMemcpy(h_C, d_C, size, cudaMemcpyDeviceToHost) );
  
  CleanupResources();

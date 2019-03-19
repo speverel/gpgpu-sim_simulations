@@ -1,27 +1,16 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <cutil.h>
-#include <math.h>
 // Includes
 #include <stdio.h>
-#include "../include/ContAcq-IntClk.h"
+#include <stdlib.h>
 
-// includes, project
-#include "../include/sdkHelper.h"  // helper for shared functions common to CUDA SDK samples
-//#include <shrQATest.h>
-//#include <shrUtils.h>
 
 // includes CUDA
 #include <cuda_runtime.h>
 
-#define THREADS_PER_BLOCK 256
-#define NUM_OF_BLOCKS 60
-#define ITERATIONS REPLACE_ITERATIONS
+// includes project
 
-#define LINE_SIZE 	128
-#define SETS		64
-#define ASSOC		6
-#define SIMD_WIDTH	32
+
+#define THREADS_PER_BLOCK 256
+#define NUM_OF_BLOCKS 640
 
 // Variables
 int* h_A;
@@ -36,7 +25,6 @@ unsigned int my_timer;
 // Functions
 void CleanupResources(void);
 void RandomInit(int*, int);
-void ParseArguments(int, char**);
 
 ////////////////////////////////////////////////////////////////////////////////
 // These are CUDA Helper functions
@@ -68,18 +56,16 @@ inline void __getLastCudaError(const char *errorMessage, const char *file, const
 
 
 // Device code
-__global__ void PowerKernal(int* A, int* C, int N){
+__global__ void PowerKernal(int* A, int* C, int iterations){
     int tid = blockDim.x * blockIdx.x + threadIdx.x;
     //Do Some Computation
 
-    int size = (LINE_SIZE*ASSOC*SETS)/sizeof(int);
-    unsigned j=0, k=0;
+
+    unsigned k=0;
     int m_sum=0;
 	// Fill the L1 cache, Miss on first LD, Hit on subsequent LDs
-	for(k=0; k<ITERATIONS; ++k){
-		//for(j=0; j<(size); j+=THREADS_PER_BLOCK){
+	for(k=0; k<iterations; ++k){
 			m_sum += A[tid];
-		//}
 	}
 	C[tid]=m_sum;
     __syncthreads();
@@ -88,63 +74,73 @@ __global__ void PowerKernal(int* A, int* C, int N){
 
 // Host code
 
-int main(){
+// Host code
+int main(int argc, char** argv) 
+{
+	int iterations;
+	if (argc != 2){
+		fprintf(stderr,"usage: %s #iterations\n",argv[0]);
+		exit(1);
+	}
+	else{
+		iterations = atoi(argv[1]);
+	}
 
-	 printf("Power Microbenchmarks\n");
-	 //int N = LINE_SIZE*SETS*ASSOC;
-	 int N = NUM_OF_BLOCKS*THREADS_PER_BLOCK;
-	 size_t size = N * sizeof(int) * NUM_OF_BLOCKS;
+	printf("Power Microbenchmark with %d iterations\n",iterations);
+	int N = NUM_OF_BLOCKS*THREADS_PER_BLOCK;
+	size_t size = N * sizeof(int) ;
+	// Allocate input vectors h_A and h_B in host memory
+	h_A = (int*)malloc(size);
+	if (h_A == 0) CleanupResources();
+	// h_B = (int*)malloc(size);
+	// if (h_B == 0) CleanupResources();
+	h_C = (int*)malloc(size);
+	if (h_C == 0) CleanupResources();
 
-	 // Allocate input vectors h_A and h_B in host memory
-	 h_A = (int*)malloc(size);
-	 if (h_A == 0) CleanupResources();
-	 //h_B = (float*)malloc(size);
-	 //if (h_B == 0) CleanupResources();
-	 h_C = (int*)malloc(size);
-	 if (h_C == 0) CleanupResources();
 
-	 // Initialize input vectors
-	 RandomInit(h_A, N);
-	 //RandomInit(h_B, N);
 
-	 // Allocate vectors in device memory
-	 checkCudaErrors( cudaMalloc((void**)&d_A, size) );
-	 //checkCudaErrors( cudaMalloc((void**)&d_B, size) );
-	 checkCudaErrors( cudaMalloc((void**)&d_C, size) );
+	// Initialize input vectors
+	RandomInit(h_A, N);
+	// RandomInit(h_B, N);
 
-	 // Copy vectors from host memory to device memory
-	 checkCudaErrors( cudaMemcpy(d_A, h_A, size, cudaMemcpyHostToDevice) );
-	 //checkCudaErrors( cudaMemcpy(d_B, h_B, size, cudaMemcpyHostToDevice) );
+	// Allocate vectors in device memory
+	checkCudaErrors( cudaMalloc((void**)&d_A, size) );
+	// checkCudaErrors( cudaMalloc((void**)&d_B, size) );
+	checkCudaErrors( cudaMalloc((void**)&d_C, size) );
 
-	 //VecAdd<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C, N);
-	 dim3 dimGrid(NUM_OF_BLOCKS,1);
-	 dim3 dimBlock(THREADS_PER_BLOCK,1);
+	cudaEvent_t start, stop;
+	float elapsedTime = 0;
+	checkCudaErrors(cudaEventCreate(&start));
+	checkCudaErrors(cudaEventCreate(&stop));
 
-	CUT_SAFE_CALL(cutCreateTimer(&my_timer)); 
-	TaskHandle taskhandle = LaunchDAQ();
-	CUT_SAFE_CALL(cutStartTimer(my_timer)); 
+	// Copy vectors from host memory to device memory
+	checkCudaErrors( cudaMemcpy(d_A, h_A, size, cudaMemcpyHostToDevice) );
+	// checkCudaErrors( cudaMemcpy(d_B, h_B, size, cudaMemcpyHostToDevice) );
 
-	 PowerKernal<<<dimGrid,dimBlock>>>(d_A, d_C, N);
 
-	CUDA_SAFE_CALL( cudaThreadSynchronize() );
-	printf("execution time = %f\n", cutGetTimerValue(my_timer));
-	TurnOffDAQ(taskhandle, cutGetTimerValue(my_timer));
-	CUT_SAFE_CALL(cutStopTimer(my_timer));
-	CUT_SAFE_CALL(cutDeleteTimer(my_timer)); 
+	dim3 dimGrid(NUM_OF_BLOCKS,1);
+	dim3 dimBlock(THREADS_PER_BLOCK,1);
 
-	 getLastCudaError("kernel launch failure");
+	checkCudaErrors(cudaEventRecord(start));
+	PowerKernal<<<dimGrid,dimBlock>>>(d_A, d_C, iterations);
+	checkCudaErrors(cudaEventRecord(stop));
 
-	#ifdef _DEBUG
-	 checkCudaErrors( cudaDeviceSynchronize() );
-	#endif
+	checkCudaErrors(cudaEventSynchronize(stop));
+	checkCudaErrors(cudaEventElapsedTime(&elapsedTime, start, stop));
+	printf("gpu execution time = %.2f s\n", elapsedTime/1000);
 
-	 // Copy result from device memory to host memory
-	 // h_C contains the result in host memory
-	 checkCudaErrors( cudaMemcpy(h_C, d_C, size, cudaMemcpyDeviceToHost) );
+	getLastCudaError("kernel launch failure");
+	cudaThreadSynchronize();
 
-	 CleanupResources();
+	// Copy result from device memory to host memory
+	// h_C contains the result in host memory
+	checkCudaErrors( cudaMemcpy(h_C, d_C, size, cudaMemcpyDeviceToHost) );
 
-	 return 0;
+	checkCudaErrors(cudaEventDestroy(start));
+	checkCudaErrors(cudaEventDestroy(stop));
+	CleanupResources();
+
+	return 0;
 }
 
 void CleanupResources(void){
@@ -163,7 +159,6 @@ void CleanupResources(void){
 //	free(h_B);
   if (h_C)
 	free(h_C);
-
 }
 
 // Allocates an array with random float entries.
