@@ -39,8 +39,6 @@
   CUFILES         := BE_L1D_MISS_L2D_HIT.cu
 # # C/C++ source files (compiled with gcc / c++)
   CCFILES         := \
-
-  CUDACCFLAGS      := REPLACE_FLAGS
 	#
 #
 #

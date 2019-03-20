@@ -40,7 +40,6 @@
 # # C/C++ source files (compiled with gcc / c++)
   CCFILES         := \
 	#
-  CUDACCFLAGS      := REPLACE_FLAGS
 
 #
 #
