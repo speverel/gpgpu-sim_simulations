@@ -19,11 +19,8 @@
 
 // Includes
 #include <stdio.h>
+#include <stdlib.h>
 
-// includes, project
-#include "../include/sdkHelper.h"  // helper for shared functions common to CUDA SDK samples
-//#include <shrQATest.h>
-//#include <shrUtils.h>
 
 // includes CUDA
 #include <cuda_runtime.h>

@@ -181,9 +181,3 @@ void RandomInit(float* data, int n)
 	data[i] = rand() / RAND_MAX;
   }
 }
-
-
-
-
-
-

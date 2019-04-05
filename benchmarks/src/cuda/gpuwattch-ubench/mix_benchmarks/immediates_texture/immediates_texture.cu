@@ -1,17 +1,13 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <cutil.h>
 // Includes
 #include <stdio.h>
-#include <../include/repeat.h>
-#include "../include/ContAcq-IntClk.h"
-// includes, project
-#include <../include/sdkHelper.h>  // helper for shared functions common to CUDA SDK samples
-//#include <shrQATest.h>
-//#include <shrUtils.h>
+#include <stdlib.h>
+
 
 // includes CUDA
 #include <cuda_runtime.h>
+
+// includes project
+#include <../include/repeat.h>
 
 #define MAX_THREADS_PER_BLOCK 256
 
@@ -19,7 +15,7 @@
 #define SETS		4
 #define ASSOC		24
 #define SIMD_WIDTH	32
-#define ITERATIONS REPLACE_ITERATIONS
+
 // Variables
 int no_of_nodes;
 int edge_list_size;
@@ -32,13 +28,11 @@ struct Node
 	int no_of_edges;
 };
 
-bool noprompt = false;
-unsigned int my_timer;
 
 // Functions
 void CleanupResources(void);
 void RandomInit(int*, int);
-void ParseArguments(int, char**);
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // These are CUDA Helper functions
@@ -73,14 +67,14 @@ texture<float,1,cudaReadModeElementType> texmem2;
 texture<float,1,cudaReadModeElementType> texmem3;
 
 
-__global__ void tex_bm_kernel( float* out, unsigned size)
+__global__ void tex_bm_kernel( float* out, unsigned size, int iterations)
 {
 	int tid = blockIdx.x*MAX_THREADS_PER_BLOCK + threadIdx.x;
 
 	float I1=0;
 	float I2=0;
 	if(tid < size){
-		for(unsigned i=0; i<ITERATIONS; ++i){
+		for(unsigned i=0; i<iterations; ++i){
 			out[tid] = tex1Dfetch(texmem1,tid);
 			out[tid*2] = tex1Dfetch(texmem2,tid);
 			I1=out[tid];
@@ -103,8 +97,18 @@ __global__ void tex_bm_kernel( float* out, unsigned size)
 
 // Host code
 
-int main()
+int main(int argc, char** argv) 
 {
+    int iterations;
+    if (argc != 2){
+        fprintf(stderr,"usage: %s #iterations\n",argv[0]);
+        exit(1);
+    }
+    else{
+        iterations = atoi(argv[1]);
+    }
+
+    printf("Power Microbenchmark with %d iterations\n",iterations);
 	
  int texmem_size = LINE_SIZE*SETS*ASSOC;
 
@@ -137,23 +141,23 @@ int main()
  dim3  grid( num_blocks, 1, 1);
  dim3  threads( MAX_THREADS_PER_BLOCK, 1, 1);
 
- CUT_SAFE_CALL(cutCreateTimer(&my_timer));
- TaskHandle taskhandle = LaunchDAQ();
- CUT_SAFE_CALL(cutStartTimer(my_timer));
+ cudaEvent_t start, stop;
+ float elapsedTime = 0;
+ checkCudaErrors(cudaEventCreate(&start));
+ checkCudaErrors(cudaEventCreate(&stop));
 
- tex_bm_kernel<<< grid, threads, 0 >>>(device_out, texmem_size);
- cudaThreadSynchronize();
+ checkCudaErrors(cudaEventRecord(start));
+ tex_bm_kernel<<< grid, threads, 0 >>>(device_out, texmem_size, iterations);
+ checkCudaErrors(cudaEventRecord(stop));
 
- CUT_SAFE_CALL(cutStopTimer(my_timer));
- TurnOffDAQ(taskhandle, cutGetTimerValue(my_timer));
- printf("execution time = %f\n", cutGetTimerValue(my_timer));
- CUT_SAFE_CALL(cutDeleteTimer(my_timer));
-
-
- printf("Kernel DONE, probably correctly\n");
- cudaMemcpy(host_out, device_out, texmem_size*sizeof(float), cudaMemcpyDeviceToHost);
- 
- return 0;
+ checkCudaErrors(cudaEventSynchronize(stop));
+  checkCudaErrors(cudaEventElapsedTime(&elapsedTime, start, stop));
+  printf("gpu execution time = %.2f s\n", elapsedTime/1000);
+  getLastCudaError("kernel launch failure");
+  cudaThreadSynchronize();
+  checkCudaErrors(cudaEventDestroy(start));
+  checkCudaErrors(cudaEventDestroy(stop));
+  return 0;
 }
 
 // Allocates an array with random float entries.
