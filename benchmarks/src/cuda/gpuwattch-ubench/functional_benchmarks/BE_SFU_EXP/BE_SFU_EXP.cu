@@ -1,23 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <cutil.h>
 #include <math.h>
-// Includes
-#include <stdio.h>
-
-// includes, project
-#include "../include/sdkHelper.h"  // helper for shared functions common to CUDA SDK samples
-#include "../include/ContAcq-IntClk.h"
-//#include <shrQATest.h>
-//#include <shrUtils.h>
 
 // includes CUDA
 #include <cuda_runtime.h>
-#include <cuda_runtime.h>
 
 #define THREADS_PER_BLOCK 256
-#define NUM_OF_BLOCKS 60
-#define ITERATIONS REPLACE_ITERATIONS
+#define NUM_OF_BLOCKS 640
 
 // Variables
 float* h_A;
@@ -26,13 +15,10 @@ float* h_C;
 float* d_A;
 float* d_B;
 float* d_C;
-bool noprompt = false;
-unsigned int my_timer;
 
 // Functions
 void CleanupResources(void);
 void RandomInit(float*, int);
-void ParseArguments(int, char**);
 
 ////////////////////////////////////////////////////////////////////////////////
 // These are CUDA Helper functions
@@ -66,7 +52,7 @@ inline void __getLastCudaError(const char *errorMessage, const char *file, const
 
 
 // Device code
-__global__ void PowerKernal1(const float* A, const float* B, float* C, int N)
+__global__ void PowerKernal1(const float* A, const float* B, float* C, int iterations)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     //Do Some Computation
@@ -74,10 +60,10 @@ __global__ void PowerKernal1(const float* A, const float* B, float* C, int N)
     float Value2=0;
     float Value3=0;
     float Value=0;
-    float I1=A[i];
-    float I2=B[i];
+    float I1=A[i];  
+    float I2=B[i];   
     // exponential function
-    for(unsigned k=0; k<ITERATIONS;k++) {
+    for(unsigned k=0; k<iterations;k++) {
     	Value2=exp(Value1);
     	Value3=exp(Value2);
     	Value1=exp(Value3);
@@ -95,9 +81,17 @@ __global__ void PowerKernal1(const float* A, const float* B, float* C, int N)
 
 // Host code
 
-int main()
+int main(int argc, char** argv)
 {
- printf("Power Microbenchmarks\n");
+ int iterations;
+ if(argc!=2) {
+   fprintf(stderr,"usage: %s #iterations\n",argv[0]);
+ }
+ else {
+   iterations = atoi(argv[1]);
+ }
+ 
+ printf("Power Microbenchmarks with iterations %d\n",iterations);
  int N = THREADS_PER_BLOCK*NUM_OF_BLOCKS;
  size_t size = N * sizeof(float);
  // Allocate input vectors h_A and h_B in host memory
@@ -121,6 +115,11 @@ int main()
  checkCudaErrors( cudaMalloc((void**)&d_C, size) );
  printf("after malloc in GPU\n");
 
+ cudaEvent_t start, stop;                   
+ float elapsedTime = 0;                     
+ checkCudaErrors(cudaEventCreate(&start));  
+ checkCudaErrors(cudaEventCreate(&stop));   
+
  // Copy vectors from host memory to device memory
  checkCudaErrors( cudaMemcpy(d_A, h_A, size, cudaMemcpyHostToDevice) );
  checkCudaErrors( cudaMemcpy(d_B, h_B, size, cudaMemcpyHostToDevice) );
@@ -130,31 +129,24 @@ int main()
  dim3 dimBlock(THREADS_PER_BLOCK,1);
  dim3 dimGrid2(1,1);
  dim3 dimBlock2(1,1);
- CUT_SAFE_CALL(cutCreateTimer(&my_timer)); 
- TaskHandle taskhandle = LaunchDAQ();
- CUT_SAFE_CALL(cutStartTimer(my_timer)); 
- printf("execution time = %f\n", cutGetTimerValue(my_timer));
 
- PowerKernal1<<<dimGrid,dimBlock>>>(d_A, d_B, d_C, N);
- CUDA_SAFE_CALL( cudaThreadSynchronize() );
- printf("execution time = %f\n", cutGetTimerValue(my_timer));
-
+ checkCudaErrors(cudaEventRecord(start));              
+ PowerKernal1<<<dimGrid,dimBlock>>>(d_A, d_B, d_C, iterations);  
+ checkCudaErrors(cudaEventRecord(stop));               
  
+ checkCudaErrors(cudaEventSynchronize(stop));           
+ checkCudaErrors(cudaEventElapsedTime(&elapsedTime, start, stop));  
+ printf("execution time = %.2f s\n", elapsedTime/1000);  
+ getLastCudaError("kernel launch failure");              
+ cudaThreadSynchronize();                                
 
- getLastCudaError("kernel launch failure");
-
-CUDA_SAFE_CALL( cudaThreadSynchronize() );
-CUT_SAFE_CALL(cutStopTimer(my_timer));
-TurnOffDAQ(taskhandle, cutGetTimerValue(my_timer));
-printf("execution time = %f\n", cutGetTimerValue(my_timer));
-CUT_SAFE_CALL(cutDeleteTimer(my_timer)); 
-#ifdef _DEBUG
- checkCudaErrors( cudaDeviceSynchronize() );
-#endif
 
  // Copy result from device memory to host memory
  // h_C contains the result in host memory
  checkCudaErrors( cudaMemcpy(h_C, d_C, size, cudaMemcpyDeviceToHost) );
+
+ checkCudaErrors(cudaEventDestroy(start));
+ checkCudaErrors(cudaEventDestroy(stop));
  
  CleanupResources();
 

@@ -18,18 +18,18 @@
 //#include "../include/ContAcq-IntClk.h"
 
 // Variables
-float* h_A;
-float* h_B;
-float* h_C;
-float* d_A;
-float* d_B;
-float* d_C;
+double* h_A;
+double* h_B;
+double* h_C;
+double* d_A;
+double* d_B;
+double* d_C;
 //bool noprompt = false;
 //unsigned int my_timer;
 
 // Functions
 void CleanupResources(void);
-void RandomInit(float*, int);
+void RandomInit(double*, int);
 //void ParseArguments(int, char**);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -59,16 +59,16 @@ inline void __getLastCudaError(const char *errorMessage, const char *file, const
 }
 
 // end of CUDA Helper Functions
-__global__ void PowerKernal2(const float* A, const float* B, float* C, int N)
+__global__ void PowerKernal2(const double* A, const double* B, double* C, int N)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     //Do Some Computation
-    float Value1;
-    float Value2;
-    float Value3;
-    float Value;
-    float I1=A[i];
-    float I2=B[i];
+    double Value1;
+    double Value2;
+    double Value3;
+    double Value;
+    double I1=A[i];
+    double I2=B[i];
 
     // Excessive Addition access
     for(unsigned k=0; k<N;k++) {
@@ -105,13 +105,13 @@ int main(int argc, char** argv)
  
  printf("Power Microbenchmarks with iterations %d\n",iterations);
  int N = THREADS_PER_BLOCK*NUM_OF_BLOCKS;
- size_t size = N * sizeof(float);
+ size_t size = N * sizeof(double);
  // Allocate input vectors h_A and h_B in host memory
- h_A = (float*)malloc(size);
+ h_A = (double*)malloc(size);
  if (h_A == 0) CleanupResources();
- h_B = (float*)malloc(size);
+ h_B = (double*)malloc(size);
  if (h_B == 0) CleanupResources();
- h_C = (float*)malloc(size);
+ h_C = (double*)malloc(size);
  if (h_C == 0) CleanupResources();
 
  // Initialize input vectors
@@ -204,8 +204,8 @@ void CleanupResources(void)
 
 }
 
-// Allocates an array with random float entries.
-void RandomInit(float* data, int n)
+// Allocates an array with random double entries.
+void RandomInit(double* data, int n)
 {
   for (int i = 0; i < n; ++i){ 
 	data[i] = rand() / RAND_MAX;
