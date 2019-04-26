@@ -1,12 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <cutil.h>
+//#include <cutil.h>
 // Includes
 #include <stdio.h>
-#include "../include/ContAcq-IntClk.h"
+//#include "../include/ContAcq-IntClk.h"
 
 // includes, project
-#include "../include/sdkHelper.h"  // helper for shared functions common to CUDA SDK samples
+//#include "../include/sdkHelper.h"  // helper for shared functions common to CUDA SDK samples
 //#include <shrQATest.h>
 //#include <shrUtils.h>
 
@@ -14,8 +14,8 @@
 #include <cuda_runtime.h>
 
 #define THREADS_PER_BLOCK 256
-#define NUM_OF_BLOCKS 60
-#define ITERATIONS REPLACE_ITERATIONS
+#define NUM_OF_BLOCKS 640
+//#define ITERATIONS 40
 
 // Variables
 unsigned* h_A;
@@ -30,7 +30,7 @@ unsigned int my_timer;
 // Functions
 void CleanupResources(void);
 void RandomInit(unsigned*, int);
-void ParseArguments(int, char**);
+//void ParseArguments(int, char**);
 
 ////////////////////////////////////////////////////////////////////////////////
 // These are CUDA Helper functions
@@ -65,7 +65,7 @@ inline void __getLastCudaError(const char *errorMessage, const char *file, const
 
 
 
-__global__ void PowerKernal4(const unsigned* A, const unsigned* B, unsigned* C, int N)
+__global__ void PowerKernal4(const unsigned* A, const unsigned* B, unsigned* C, int iterations)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     //Do Some Computation
@@ -79,7 +79,7 @@ __global__ void PowerKernal4(const unsigned* A, const unsigned* B, unsigned* C, 
 
     __syncthreads();
    // Excessive Mod/Div Operations
-    for(unsigned k=0; k<ITERATIONS;k++) {
+    for(unsigned k=0; k<iterations;k++) {
 
     	Value1=I1/(I2+1);
     	Value2=Value1/(I2+1);
@@ -109,9 +109,16 @@ __global__ void PowerKernal4(const unsigned* A, const unsigned* B, unsigned* C, 
 
 }
 
-int main()
+int main(int argc, char** argv)
 {
- printf("Power Microbenchmarks\n");
+ int iterations;
+ if(argc!=2) {
+   fprintf(stderr,"usage: %s #iterations\n",argv[0]);
+ }
+ else {
+   iterations = atoi(argv[1]);
+ }
+ printf("Power Microbenchmarks with iterations %d\n",iterations);
  int N = THREADS_PER_BLOCK*NUM_OF_BLOCKS;
  size_t size = N * sizeof(unsigned);
  // Allocate input vectors h_A and h_B in host memory
@@ -135,13 +142,28 @@ int main()
  checkCudaErrors( cudaMemcpy(d_A, h_A, size, cudaMemcpyHostToDevice) );
  checkCudaErrors( cudaMemcpy(d_B, h_B, size, cudaMemcpyHostToDevice) );
 
+ cudaEvent_t start, stop;                   
+ float elapsedTime = 0;                     
+ checkCudaErrors(cudaEventCreate(&start));  
+ checkCudaErrors(cudaEventCreate(&stop));  
+
  //VecAdd<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C, N);
  dim3 dimGrid(NUM_OF_BLOCKS,1);
  dim3 dimBlock(THREADS_PER_BLOCK,1);
  dim3 dimGrid2(1,1);
  dim3 dimBlock2(1,1);
 
- CUT_SAFE_CALL(cutCreateTimer(&my_timer)); 
+ checkCudaErrors(cudaEventRecord(start));              
+ PowerKernal4<<<dimGrid,dimBlock>>>(d_A, d_B, d_C, iterations);  
+ checkCudaErrors(cudaEventRecord(stop));               
+ 
+ checkCudaErrors(cudaEventSynchronize(stop));           
+ checkCudaErrors(cudaEventElapsedTime(&elapsedTime, start, stop));  
+ printf("execution time = %.2f s\n", elapsedTime/1000);  
+ getLastCudaError("kernel launch failure");              
+ cudaThreadSynchronize(); 
+
+ /*CUT_SAFE_CALL(cutCreateTimer(&my_timer)); 
  TaskHandle taskhandle = LaunchDAQ();
  CUT_SAFE_CALL(cutStartTimer(my_timer)); 
  printf("execution time = %f\n", cutGetTimerValue(my_timer));
@@ -160,12 +182,13 @@ CUT_SAFE_CALL(cutDeleteTimer(my_timer));
 
 #ifdef _DEBUG
  checkCudaErrors( cudaDeviceSynchronize() );
-#endif
+#endif*/
 
  // Copy result from device memory to host memory
  // h_C contains the result in host memory
  checkCudaErrors( cudaMemcpy(h_C, d_C, size, cudaMemcpyDeviceToHost) );
- 
+ checkCudaErrors(cudaEventDestroy(start));
+ checkCudaErrors(cudaEventDestroy(stop));
  CleanupResources();
 
  return 0;

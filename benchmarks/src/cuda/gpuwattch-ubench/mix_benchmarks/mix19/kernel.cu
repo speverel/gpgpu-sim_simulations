@@ -1,17 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <cutil.h>
-#include <math.h>
 // Includes
 #include <stdio.h>
-#include <string.h>
-#include <cuda.h>
+#include <stdlib.h>
 
-// includes, project
-#include "../include/sdkHelper.h"  // helper for shared functions common to CUDA SDK samples
-//#include <shrQATest.h>
-//#include <shrUtils.h>
-#include "../include/ContAcq-IntClk.h"
 
 // includes CUDA
 #include <cuda_runtime.h>
@@ -35,14 +25,11 @@ struct Node
 	int no_of_edges;
 };
 
-bool noprompt = false;
-unsigned int my_timer;
 
 // Functions
 void CleanupResources(void);
 void RandomInit(int*, int);
 void RandomInit_fp(float*, int);
-void ParseArguments(int, char**);
 
 ////////////////////////////////////////////////////////////////////////////////
 // These are CUDA Helper functions
@@ -74,7 +61,7 @@ inline void __getLastCudaError(const char *errorMessage, const char *file, const
 
 
 // Device code
-#define ITERATIONS REPLACE_ITERATIONS
+
 
 texture<float,1,cudaReadModeElementType> texmem1;
 texture<float,1,cudaReadModeElementType> texmem2;
@@ -95,7 +82,7 @@ __constant__ float ConstArray7[THREADS_PER_BLOCK];
 __constant__ float ConstArray8[THREADS_PER_BLOCK];
 
 
-__global__ void tex_bm_kernel( float *A,float* out, unsigned size)
+__global__ void tex_bm_kernel( float *A,float* out, unsigned size, int iterations)
 {
 	int tid = blockIdx.x*MAX_THREADS_PER_BLOCK + threadIdx.x;
 	__device__ __shared__ float I1[THREADS_PER_BLOCK];
@@ -117,7 +104,7 @@ __global__ void tex_bm_kernel( float *A,float* out, unsigned size)
 	I8[tid%THREADS_PER_BLOCK] = tid/2;
 	
 	if(tid < size){
-		for(unsigned i=0; i<ITERATIONS; ++i){
+		for(unsigned i=0; i<iterations; ++i){
 			out[tid] = tex1Dfetch(texmem1,tid)+A[(tid+i)%THREADS_PER_BLOCK];
 			out[tid*2] = ConstArray1[(tid+i)%THREADS_PER_BLOCK]+A[(tid+i+1)%THREADS_PER_BLOCK];
 			out[tid*3] =  I1[(tid+i)%THREADS_PER_BLOCK]+A[(tid+i+2)%THREADS_PER_BLOCK];
@@ -136,10 +123,20 @@ __global__ void tex_bm_kernel( float *A,float* out, unsigned size)
 ////////////////////////////////////////////////////////////////////////////////
 // Main Program
 ////////////////////////////////////////////////////////////////////////////////
-float *h_A1;;
+float *h_A1;
 float *d_A1;
-int main( int argc, char** argv) 
+int main(int argc, char** argv) 
 {
+    int iterations;
+    if (argc != 2){
+        fprintf(stderr,"usage: %s #iterations\n",argv[0]);
+        exit(1);
+    }
+    else{
+        iterations = atoi(argv[1]);
+    }
+
+    printf("Power Microbenchmark with %d iterations\n",iterations);
 	
 	 float array1[THREADS_PER_BLOCK];
 	 for(int i=0; i<THREADS_PER_BLOCK;i++){
@@ -257,20 +254,22 @@ int main( int argc, char** argv)
 	dim3  grid( num_blocks, 1, 1);
 	dim3  threads( MAX_THREADS_PER_BLOCK, 1, 1);
 
-	CUT_SAFE_CALL(cutCreateTimer(&my_timer));
-	TaskHandle taskhandle = LaunchDAQ();
-	CUT_SAFE_CALL(cutStartTimer(my_timer));
+	cudaEvent_t start, stop;
+    float elapsedTime = 0;
+    checkCudaErrors(cudaEventCreate(&start));
+    checkCudaErrors(cudaEventCreate(&stop));
 
-	tex_bm_kernel<<< grid, threads, 0 >>>(d_A1,device_out, texmem_size);
-	cudaThreadSynchronize();
-
-	CUT_SAFE_CALL(cutStopTimer(my_timer));
-	TurnOffDAQ(taskhandle, cutGetTimerValue(my_timer));
-	printf("execution time = %f\n", cutGetTimerValue(my_timer));
-	CUT_SAFE_CALL(cutDeleteTimer(my_timer));
+    checkCudaErrors(cudaEventRecord(start));
+	tex_bm_kernel<<< grid, threads, 0 >>>(d_A1,device_out, texmem_size, iterations);
+	checkCudaErrors(cudaEventRecord(stop));
 
 
-	printf("Kernel DONE, probably correctly\n");
+ 	checkCudaErrors(cudaEventSynchronize(stop));
+    checkCudaErrors(cudaEventElapsedTime(&elapsedTime, start, stop));
+    printf("gpu execution time = %.2f s\n", elapsedTime/1000);
+    getLastCudaError("kernel launch failure");
+    cudaThreadSynchronize();
+
 	cudaMemcpy(host_out, device_out, texmem_size*sizeof(float), cudaMemcpyDeviceToHost);
 
 	/*
@@ -284,6 +283,9 @@ int main( int argc, char** argv)
 	if (error) printf("\nFAILED\n");
 	else printf("\nPASSED\n");
 	*/
+	checkCudaErrors(cudaEventDestroy(start));
+    checkCudaErrors(cudaEventDestroy(stop));
+    return 0;
 }
 
 void CleanupResources(void){

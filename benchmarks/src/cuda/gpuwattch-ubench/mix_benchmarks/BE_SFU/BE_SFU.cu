@@ -1,23 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <cutil.h>
 #include <math.h>
 // Includes
-#include <stdio.h>
-
-// includes, project
-#include "../include/sdkHelper.h"  // helper for shared functions common to CUDA SDK samples
-#include "../include/ContAcq-IntClk.h"
-//#include <shrQATest.h>
-//#include <shrUtils.h>
 
 // includes CUDA
 #include <cuda_runtime.h>
-#include <cuda_runtime.h>
+//#include <cuda_runtime.h>
 
 #define THREADS_PER_BLOCK 256
-#define NUM_OF_BLOCKS 240
-#define ITERATIONS REPLACE_ITERATIONS
+#define NUM_OF_BLOCKS 640
 
 // Variables
 float* h_A;
@@ -26,13 +17,11 @@ float* h_C;
 float* d_A;
 float* d_B;
 float* d_C;
-bool noprompt = false;
-unsigned int my_timer;
+
 
 // Functions
 void CleanupResources(void);
 void RandomInit(float*, int);
-void ParseArguments(int, char**);
 
 ////////////////////////////////////////////////////////////////////////////////
 // These are CUDA Helper functions
@@ -66,7 +55,7 @@ inline void __getLastCudaError(const char *errorMessage, const char *file, const
 
 
 // Device code
-__global__ void PowerKernal1(const float* A, const float* B, float* C, int N)
+__global__ void PowerKernal1(const float* A, const float* B, float* C, int iterations)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     //Do Some Computation
@@ -77,7 +66,7 @@ __global__ void PowerKernal1(const float* A, const float* B, float* C, int N)
     float I1=A[i];
     float I2=B[i];
     // exponential function
-    for(unsigned k=0; k<ITERATIONS*(blockDim.x/blockDim.x+50);k++) {
+    for(unsigned k=0; k<iterations*(blockDim.x/blockDim.x+50);k++) {
     	Value2=exp(Value1);
     	Value3=exp(Value2);
     	Value1=exp(Value3);
@@ -93,7 +82,7 @@ __global__ void PowerKernal1(const float* A, const float* B, float* C, int N)
 
 }
 
-__global__ void PowerKernal2(const float* A, const float* B, float* C, int N)
+__global__ void PowerKernal2(const float* A, const float* B, float* C, int iterations)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     //Do Some Computation
@@ -105,7 +94,7 @@ __global__ void PowerKernal2(const float* A, const float* B, float* C, int N)
     float I2=B[i];
 
     //sinusoidal functions
-    for(unsigned k=0; k<ITERATIONS*(blockDim.x/blockDim.x+50);k++) {
+    for(unsigned k=0; k<iterations*(blockDim.x/blockDim.x+50);k++) {
         Value2=cos(Value1);
         Value3=sin(Value2);
         Value2=cos(Value1);
@@ -122,7 +111,7 @@ __global__ void PowerKernal2(const float* A, const float* B, float* C, int N)
 }
 
 
-__global__ void PowerKernal3(const float* A, const float* B, float* C, int N)
+__global__ void PowerKernal3(const float* A, const float* B, float* C, int iterations)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     //Do Some Computation
@@ -134,7 +123,7 @@ __global__ void PowerKernal3(const float* A, const float* B, float* C, int N)
     float I2=B[i];
 
     //square root
-    for(unsigned long k=0; k<ITERATIONS*(blockDim.x/blockDim.x+100);k++) {
+    for(unsigned long k=0; k<iterations*(blockDim.x/blockDim.x+100);k++) {
 	Value1=Value2*Value2;
 	Value1=sqrt(abs(Value1));
 	Value2=sqrt(abs(I2))*sqrt(abs(I2));
@@ -154,7 +143,7 @@ __global__ void PowerKernal3(const float* A, const float* B, float* C, int N)
 
 }
 
-__global__ void PowerKernalEmpty(const float* A, const float* B, float* C, int N)
+__global__ void PowerKernalEmpty(const float* A, const float* B, float* C, int iterations)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     //Do Some Computation
@@ -168,7 +157,8 @@ __global__ void PowerKernalEmpty(const float* A, const float* B, float* C, int N
 
     __syncthreads();
    // Excessive Mod/Div Operations
-    for(unsigned long k=0; k<ITERATIONS*(blockDim.x+299);k++) {
+    #pragma unroll 1
+    for(unsigned long k=0; k<iterations*(blockDim.x+299);k++) {
     	Value1=(I1)+k;
         Value2=(I2)+k;
         Value3=(Value2)+k;
@@ -217,7 +207,7 @@ __global__ void PowerKernalEmpty(const float* A, const float* B, float* C, int N
 
 }
 
-__global__ void PowerKernal4(const float* A, const float* B, float* C, int N)
+__global__ void PowerKernal4(const float* A, const float* B, float* C, int iterations)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     //Do Some Computation
@@ -230,7 +220,7 @@ __global__ void PowerKernal4(const float* A, const float* B, float* C, int N)
 
 
     // logarithmic
-    for(unsigned k=0; k<ITERATIONS*(blockDim.x+50);k++) {
+    for(unsigned k=0; k<iterations*(blockDim.x+50);k++) {
     Value1=log2((I1));
     Value2=log2((I2));
     Value3=log2((Value2));
@@ -251,9 +241,19 @@ __global__ void PowerKernal4(const float* A, const float* B, float* C, int N)
 
 // Host code
 
-int main()
+int main(int argc, char** argv) 
 {
- printf("Power Microbenchmarks\n");
+
+  int iterations;
+  if (argc != 2){
+  fprintf(stderr,"usage: %s #iterations\n",argv[0]);
+  exit(1);
+  }
+  else{
+    iterations = atoi(argv[1]);
+  }
+
+ printf("Power Microbenchmark with %d iterations\n",iterations);
  int N = THREADS_PER_BLOCK*NUM_OF_BLOCKS;
  size_t size = N * sizeof(float);
  // Allocate input vectors h_A and h_B in host memory
@@ -287,79 +287,135 @@ int main()
  dim3 dimGrid2(1,1);
  dim3 dimBlock2(1,1);
  
-CUT_SAFE_CALL(cutCreateTimer(&my_timer)); 
-TaskHandle taskhandle = LaunchDAQ();
-CUT_SAFE_CALL(cutStartTimer(my_timer)); 
- PowerKernalEmpty<<<dimGrid2,dimBlock2>>>(d_A, d_B, d_C, N);
-CUDA_SAFE_CALL( cudaThreadSynchronize() );
-printf("execution time = %f\n", cutGetTimerValue(my_timer));
-//sleep(0.5);
+ cudaEvent_t start, stop;
+ float elapsedTime = 0;
+ checkCudaErrors(cudaEventCreate(&start));
+ checkCudaErrors(cudaEventCreate(&stop));
+ checkCudaErrors(cudaEventRecord(start));
+ PowerKernalEmpty<<<dimGrid2,dimBlock2>>>(d_A, d_B, d_C, iterations);
+ checkCudaErrors(cudaEventRecord(stop));
+ checkCudaErrors(cudaEventSynchronize(stop));
+ checkCudaErrors(cudaEventElapsedTime(&elapsedTime, start, stop));
+ printf("gpu execution time = %.2f s\n", elapsedTime/1000);
+ checkCudaErrors( cudaThreadSynchronize() );
+
 dimGrid.y = NUM_OF_BLOCKS;
 for (int i=0; i<3; i++) {
 	dimGrid.y /= 3;
-	PowerKernal1<<<dimGrid,dimBlock>>>(d_A, d_B, d_C, N);
-	CUDA_SAFE_CALL( cudaThreadSynchronize() );
-	printf("execution time = %f\n", cutGetTimerValue(my_timer));
-	PowerKernalEmpty<<<dimGrid2,dimBlock2>>>(d_A, d_B, d_C, N);
-	CUDA_SAFE_CALL( cudaThreadSynchronize() );
-	printf("execution time = %f\n", cutGetTimerValue(my_timer));
+
+    elapsedTime = 0;
+    checkCudaErrors(cudaEventCreate(&start));
+    checkCudaErrors(cudaEventCreate(&stop));
+    checkCudaErrors(cudaEventRecord(start));
+	PowerKernal1<<<dimGrid,dimBlock>>>(d_A, d_B, d_C, iterations);
+    checkCudaErrors(cudaEventRecord(stop));
+    checkCudaErrors(cudaEventSynchronize(stop));
+    checkCudaErrors(cudaEventElapsedTime(&elapsedTime, start, stop));
+    printf("gpu execution time = %.2f s\n", elapsedTime/1000);
+	checkCudaErrors( cudaThreadSynchronize() );
+
+	elapsedTime = 0;
+    checkCudaErrors(cudaEventCreate(&start));
+    checkCudaErrors(cudaEventCreate(&stop));
+    checkCudaErrors(cudaEventRecord(start));
+	PowerKernalEmpty<<<dimGrid2,dimBlock2>>>(d_A, d_B, d_C, iterations);
+    checkCudaErrors(cudaEventRecord(stop));
+    checkCudaErrors(cudaEventSynchronize(stop));
+    checkCudaErrors(cudaEventElapsedTime(&elapsedTime, start, stop));
+    printf("gpu execution time = %.2f s\n", elapsedTime/1000);
+    checkCudaErrors( cudaThreadSynchronize() );
 }
  
  
 dimGrid.y = NUM_OF_BLOCKS;
 for (int i=0; i<3; i++) {
 	dimGrid.y /= 3;
-	PowerKernal1<<<dimGrid,dimBlock>>>(d_A, d_B, d_C, N);
-	 PowerKernal2<<<dimGrid,dimBlock>>>(d_A, d_B, d_C, N);
-	CUDA_SAFE_CALL( cudaThreadSynchronize() );
-	printf("execution time = %f\n", cutGetTimerValue(my_timer));
- 
-	 PowerKernalEmpty<<<dimGrid2,dimBlock2>>>(d_A, d_B, d_C, N);
-	CUDA_SAFE_CALL( cudaThreadSynchronize() );
-	printf("execution time = %f\n", cutGetTimerValue(my_timer));
+    elapsedTime = 0;
+    checkCudaErrors(cudaEventCreate(&start));
+    checkCudaErrors(cudaEventCreate(&stop));
+    checkCudaErrors(cudaEventRecord(start));
+	//PowerKernal1<<<dimGrid,dimBlock>>>(d_A, d_B, d_C, iterations);
+	PowerKernal2<<<dimGrid,dimBlock>>>(d_A, d_B, d_C, iterations);
+	checkCudaErrors(cudaEventRecord(stop));
+    checkCudaErrors(cudaEventSynchronize(stop));
+    checkCudaErrors(cudaEventElapsedTime(&elapsedTime, start, stop));
+    printf("gpu execution time = %.2f s\n", elapsedTime/1000);
+    checkCudaErrors( cudaThreadSynchronize() );
+
+    elapsedTime = 0;
+    checkCudaErrors(cudaEventCreate(&start));
+    checkCudaErrors(cudaEventCreate(&stop));
+    checkCudaErrors(cudaEventRecord(start));
+    //PowerKernal1<<<dimGrid,dimBlock>>>(d_A, d_B, d_C, iterations
+	PowerKernalEmpty<<<dimGrid2,dimBlock2>>>(d_A, d_B, d_C, iterations);
+	checkCudaErrors(cudaEventRecord(stop));
+    checkCudaErrors(cudaEventSynchronize(stop));
+    checkCudaErrors(cudaEventElapsedTime(&elapsedTime, start, stop));
+    printf("gpu execution time = %.2f s\n", elapsedTime/1000);
+    checkCudaErrors( cudaThreadSynchronize() );
 }
  
 dimGrid.y = NUM_OF_BLOCKS;
 for (int i=0; i<3; i++) {
 	dimGrid.y /= 3;
-	 PowerKernal3<<<dimGrid,dimBlock>>>(d_A, d_B, d_C, N);
-	CUDA_SAFE_CALL( cudaThreadSynchronize() );
-	printf("execution time = %f\n", cutGetTimerValue(my_timer));
-	 
-	 PowerKernalEmpty<<<dimGrid2,dimBlock2>>>(d_A, d_B, d_C, N);
-	//sleep(0.5);
-	CUDA_SAFE_CALL( cudaThreadSynchronize() );
-	printf("execution time = %f\n", cutGetTimerValue(my_timer));
+    elapsedTime = 0;
+    checkCudaErrors(cudaEventCreate(&start));
+    checkCudaErrors(cudaEventCreate(&stop));
+    checkCudaErrors(cudaEventRecord(start));
+	PowerKernal3<<<dimGrid,dimBlock>>>(d_A, d_B, d_C, iterations);
+	checkCudaErrors(cudaEventRecord(stop));
+    checkCudaErrors(cudaEventSynchronize(stop));
+    checkCudaErrors(cudaEventElapsedTime(&elapsedTime, start, stop));
+    printf("gpu execution time = %.2f s\n", elapsedTime/1000);
+	checkCudaErrors( cudaThreadSynchronize() );
+
+    elapsedTime = 0;
+    checkCudaErrors(cudaEventCreate(&start));
+    checkCudaErrors(cudaEventCreate(&stop));
+    checkCudaErrors(cudaEventRecord(start));
+	PowerKernalEmpty<<<dimGrid2,dimBlock2>>>(d_A, d_B, d_C, iterations);
+	checkCudaErrors(cudaEventRecord(stop));
+    checkCudaErrors(cudaEventSynchronize(stop));
+    checkCudaErrors(cudaEventElapsedTime(&elapsedTime, start, stop));
+    printf("gpu execution time = %.2f s\n", elapsedTime/1000);
+    checkCudaErrors( cudaThreadSynchronize() );
 }
 
 dimGrid.y = NUM_OF_BLOCKS;
 for (int i=0; i<3; i++) {
 	dimGrid.y /= 3;
-	 PowerKernal4<<<dimGrid,dimBlock>>>(d_A, d_B, d_C, N);
-	CUDA_SAFE_CALL( cudaThreadSynchronize() );
-	printf("execution time = %f\n", cutGetTimerValue(my_timer));
-	 PowerKernalEmpty<<<dimGrid2,dimBlock2>>>(d_A, d_B, d_C, N);
+    elapsedTime = 0;
+    checkCudaErrors(cudaEventCreate(&start));
+    checkCudaErrors(cudaEventCreate(&stop));
+    checkCudaErrors(cudaEventRecord(start));
+	PowerKernal4<<<dimGrid,dimBlock>>>(d_A, d_B, d_C, iterations);
+	checkCudaErrors(cudaEventRecord(stop));
+    checkCudaErrors(cudaEventSynchronize(stop));
+    checkCudaErrors(cudaEventElapsedTime(&elapsedTime, start, stop));
+    printf("gpu execution time = %.2f s\n", elapsedTime/1000);
+    checkCudaErrors( cudaThreadSynchronize() );
 
-	CUDA_SAFE_CALL( cudaThreadSynchronize() );
-	printf("execution time = %f\n", cutGetTimerValue(my_timer));
+    elapsedTime = 0;
+    checkCudaErrors(cudaEventCreate(&start));
+    checkCudaErrors(cudaEventCreate(&stop));
+    checkCudaErrors(cudaEventRecord(start));
+	PowerKernalEmpty<<<dimGrid2,dimBlock2>>>(d_A, d_B, d_C, iterations);
+    checkCudaErrors(cudaEventRecord(stop));
+    checkCudaErrors(cudaEventSynchronize(stop));
+    checkCudaErrors(cudaEventElapsedTime(&elapsedTime, start, stop));
+    printf("gpu execution time = %.2f s\n", elapsedTime/1000);
+    checkCudaErrors( cudaThreadSynchronize() );
 }
-	 getLastCudaError("kernel launch failure");
+	getLastCudaError("kernel launch failure");
 
-CUDA_SAFE_CALL( cudaThreadSynchronize() );
-CUT_SAFE_CALL(cutStopTimer(my_timer));
-TurnOffDAQ(taskhandle, cutGetTimerValue(my_timer));
-printf("execution time = %f\n", cutGetTimerValue(my_timer));
-CUT_SAFE_CALL(cutDeleteTimer(my_timer)); 
-#ifdef _DEBUG
- checkCudaErrors( cudaDeviceSynchronize() );
-#endif
+
 
  // Copy result from device memory to host memory
  // h_C contains the result in host memory
  checkCudaErrors( cudaMemcpy(h_C, d_C, size, cudaMemcpyDeviceToHost) );
- 
+ checkCudaErrors(cudaEventDestroy(start));
+ checkCudaErrors(cudaEventDestroy(stop));
  CleanupResources();
-
  return 0;
 }
 

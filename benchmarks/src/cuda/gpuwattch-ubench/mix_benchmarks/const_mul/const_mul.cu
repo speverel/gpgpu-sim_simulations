@@ -1,21 +1,13 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <cutil.h>
 // Includes
 #include <stdio.h>
-#include "../include/ContAcq-IntClk.h"
+#include <stdlib.h>
 
-// includes, project
-#include "../include/sdkHelper.h"  // helper for shared functions common to CUDA SDK samples
-//#include <shrQATest.h>
-//#include <shrUtils.h>
 
 // includes CUDA
 #include <cuda_runtime.h>
 
 #define THREADS_PER_BLOCK 256
-#define NUM_OF_BLOCKS 60
-#define ITERATIONS REPLACE_ITERATIONS
+#define NUM_OF_BLOCKS 640
 
 // Variables
 
@@ -25,12 +17,10 @@ __constant__ float ConstArray3[THREADS_PER_BLOCK];
 
 float* h_Value;
 float* d_Value;
-bool noprompt = false;
-unsigned int my_timer;
 
 // Functions
 void CleanupResources(void);
-void ParseArguments(int, char**);
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // These are CUDA Helper functions
@@ -64,7 +54,7 @@ inline void __getLastCudaError(const char *errorMessage, const char *file, const
 
 
 // Device code
-__global__ void PowerKernal(float* Value)
+__global__ void PowerKernal(float* Value, int iterations)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     
@@ -74,7 +64,7 @@ __global__ void PowerKernal(float* Value)
     float Value2;
     float Value3;
     *Value=1;
-    for(unsigned k=0; k<ITERATIONS;k++) {
+    for(unsigned k=0; k<iterations;k++) {
     	Value1=ConstArray1[(i+k)%THREADS_PER_BLOCK];
     	Value2=ConstArray2[(i+k+1)%THREADS_PER_BLOCK];
     	Value3=ConstArray3[(i+k+5)%THREADS_PER_BLOCK];
@@ -89,9 +79,18 @@ __global__ void PowerKernal(float* Value)
 
 // Host code
 
-int main()
+int main(int argc, char** argv) 
 {
- printf("Power Microbenchmarks\n");
+    int iterations;
+    if (argc != 2){
+        fprintf(stderr,"usage: %s #iterations\n",argv[0]);
+        exit(1);
+    }
+    else{
+        iterations = atoi(argv[1]);
+    }
+
+  printf("Power Microbenchmark with %d iterations\n",iterations);
  float array1[THREADS_PER_BLOCK];
  h_Value = (float *) malloc(sizeof(float));
  for(int i=0; i<THREADS_PER_BLOCK;i++){
@@ -118,25 +117,23 @@ int main()
  dim3 dimGrid(NUM_OF_BLOCKS,1);
  dim3 dimBlock(THREADS_PER_BLOCK,1);
 
- CUT_SAFE_CALL(cutCreateTimer(&my_timer)); 
- TaskHandle taskhandle = LaunchDAQ();
- CUT_SAFE_CALL(cutStartTimer(my_timer)); 
- PowerKernal<<<dimGrid,dimBlock>>>(d_Value);
- CUDA_SAFE_CALL( cudaThreadSynchronize() );
- printf("execution time = %f\n", cutGetTimerValue(my_timer));
- TurnOffDAQ(taskhandle, cutGetTimerValue(my_timer));
- CUT_SAFE_CALL(cutStopTimer(my_timer));
- CUT_SAFE_CALL(cutDeleteTimer(my_timer)); 
+  cudaEvent_t start, stop;
+  float elapsedTime = 0;
+  checkCudaErrors(cudaEventCreate(&start));
+  checkCudaErrors(cudaEventCreate(&stop));
+
+  checkCudaErrors(cudaEventRecord(start));
+  PowerKernal<<<dimGrid,dimBlock>>>(d_Value, iterations);
+  checkCudaErrors(cudaEventRecord(stop));
  
- getLastCudaError("kernel launch failure");
-
- checkCudaErrors( cudaMemcpy(h_Value, d_Value, sizeof(float), cudaMemcpyDeviceToHost) );
-#ifdef _DEBUG
- checkCudaErrors( cudaDeviceSynchronize() );
-#endif
-
-
- return 0;
+  checkCudaErrors(cudaEventSynchronize(stop));
+  checkCudaErrors(cudaEventElapsedTime(&elapsedTime, start, stop));
+  printf("gpu execution time = %.2f s\n", elapsedTime/1000);
+  getLastCudaError("kernel launch failure");
+  cudaThreadSynchronize();
+  checkCudaErrors(cudaEventDestroy(start));
+  checkCudaErrors(cudaEventDestroy(stop));
+  return 0;
 }
 
 

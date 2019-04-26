@@ -1,23 +1,13 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <cutil.h>
 // Includes
 #include <stdio.h>
+#include <stdlib.h>
 
-// includes, project
-#include "../include/sdkHelper.h"  // helper for shared functions common to CUDA SDK samples
-//#include <shrQATest.h>
-//#include <shrUtils.h>
 
 // includes CUDA
 #include <cuda_runtime.h>
 
-//NI DAQ
-#include "../include/ContAcq-IntClk.h"
-
 #define THREADS_PER_BLOCK 256
-#define NUM_OF_BLOCKS 60
-#define ITERATIONS 100000
+#define NUM_OF_BLOCKS 640
 
 // Variables
 
@@ -28,7 +18,6 @@ unsigned int my_timer;
 void CleanupResources(void);
 void RandomInit_int(unsigned*, int);
 void RandomInit_fp(float*, int);
-void ParseArguments(int, char**);
 
 ////////////////////////////////////////////////////////////////////////////////
 // These are CUDA Helper functions
@@ -62,15 +51,15 @@ inline void __getLastCudaError(const char *errorMessage, const char *file, const
 
 
 // Device code
-__global__ void PowerKernal1(unsigned *A, unsigned *B, int N)
+__global__ void PowerKernal1(unsigned *A, unsigned *B, int N, int iterations)
 {
     int id = blockDim.x * blockIdx.x + threadIdx.x;
     unsigned sum=0;
     if(id < N){
-    	for(unsigned i=0; i<ITERATIONS; ++i){
+    	for(unsigned i=0; i<iterations; ++i){
     		A[id] = A[id] + B[id] + id;
 
-    		//for(unsigned j=0; j<ITERATIONS/4; ++j){
+    		//for(unsigned j=0; j<iterations/4; ++j){
     		sum += A[id];
     		sum += A[id+1];
     		sum += A[id+2];
@@ -98,14 +87,14 @@ __global__ void PowerKernal1(unsigned *A, unsigned *B, int N)
 
 
 
-__global__ void PowerKernalEmpty(unsigned* C, int N)
+__global__ void PowerKernalEmpty(unsigned* C, int iterations)
 {
     unsigned id = blockDim.x * blockIdx.x + threadIdx.x;
     //Do Some Computation
 
     __syncthreads();
    // Excessive Mod/Div Operations
-    for(unsigned long k=0; k<ITERATIONS*(blockDim.x + 299);k++) {
+    for(unsigned long k=0; k<iterations*(blockDim.x + 299);k++) {
     	//Value1=(I1)+k;
         //Value2=(I2)+k;
         //Value3=(Value2)+k;
@@ -157,94 +146,89 @@ __global__ void PowerKernalEmpty(unsigned* C, int N)
 unsigned *h_A1, *h_A2, *h_A3;
 unsigned *d_A1, *d_A2, *d_A3;
 
-int main()
+int main(int argc, char** argv) 
 {
-	 printf("Power Microbenchmarks\n");
-	 int N = THREADS_PER_BLOCK*NUM_OF_BLOCKS*2;
+    int iterations;
+    if (argc != 2){
+        fprintf(stderr,"usage: %s #iterations\n",argv[0]);
+        exit(1);
+    }
+    else{
+        iterations = atoi(argv[1]);
+    }
+
+    printf("Power Microbenchmark with %d iterations\n",iterations);
+	int N = THREADS_PER_BLOCK*NUM_OF_BLOCKS*2;
 	 
 	 // Allocate input vectors h_A and h_B in host memory
- 	 size_t size1 = N * sizeof(unsigned);
-	 h_A1 = (unsigned*)malloc(size1);
-	 if (h_A1 == 0) CleanupResources();
+ 	size_t size1 = N * sizeof(unsigned);
+	h_A1 = (unsigned*)malloc(size1);
+	if (h_A1 == 0) CleanupResources();
 
-	 h_A2 = (unsigned*)malloc(size1);
-	 if (h_A2 == 0) CleanupResources();
+	h_A2 = (unsigned*)malloc(size1);
+	if (h_A2 == 0) CleanupResources();
 
 
 
-	 dim3 dimGrid2(1,1);
-	 dim3 dimBlock2(1,1);
+	dim3 dimGrid2(1,1);
+	dim3 dimBlock2(1,1);
 
 	 // Initialize input vectors
-	 RandomInit_int(h_A1, N);
-	 RandomInit_int(h_A2, N);
+	RandomInit_int(h_A1, N);
+	RandomInit_int(h_A2, N);
 
 
 
 	 // Allocate vectors in device memory
-	 checkCudaErrors( cudaMalloc((void**)&d_A1, size1) );
-	 checkCudaErrors( cudaMalloc((void**)&d_A2, size1) );
+	checkCudaErrors( cudaMalloc((void**)&d_A1, size1) );
+	checkCudaErrors( cudaMalloc((void**)&d_A2, size1) );
 
 
 	 // Copy vectors from host memory to device memory
-	 checkCudaErrors( cudaMemcpy(d_A1, h_A1, size1, cudaMemcpyHostToDevice) );
-	 checkCudaErrors( cudaMemcpy(d_A2, h_A2, size1, cudaMemcpyHostToDevice) );
+	checkCudaErrors( cudaMemcpy(d_A1, h_A1, size1, cudaMemcpyHostToDevice) );
+	checkCudaErrors( cudaMemcpy(d_A2, h_A2, size1, cudaMemcpyHostToDevice) );
 
-	 dim3 dimGrid(NUM_OF_BLOCKS,1);
-	 dim3 dimBlock(THREADS_PER_BLOCK,1);
+	dim3 dimGrid(NUM_OF_BLOCKS,1);
+	dim3 dimBlock(THREADS_PER_BLOCK,1);
 
+	cudaEvent_t start, stop;
+    float elapsedTime = 0;
+    checkCudaErrors(cudaEventCreate(&start));
+    checkCudaErrors(cudaEventCreate(&stop));
+	cudaThreadSynchronize();
 
-	CUT_SAFE_CALL(cutCreateTimer(&my_timer)); 
-	TaskHandle taskhandle = LaunchDAQ();
-	CUT_SAFE_CALL(cutStartTimer(my_timer)); 
+	checkCudaErrors(cudaEventRecord(start));
+    PowerKernal1<<<dimGrid,dimBlock>>>(d_A1, d_A2, N, iterations);
+    checkCudaErrors(cudaEventRecord(stop));
 
-	CUDA_SAFE_CALL( cudaThreadSynchronize() );
-	 //PowerKernalEmpty<<<dimGrid2,dimBlock2>>>(d_A3, N);
-	CUDA_SAFE_CALL( cudaThreadSynchronize() );
-	printf("execution time = %f\n", cutGetTimerValue(my_timer));
+    checkCudaErrors(cudaEventSynchronize(stop));
+    checkCudaErrors(cudaEventElapsedTime(&elapsedTime, start, stop));
+    printf("gpu execution time = %.2f s\n", elapsedTime/1000);
+	getLastCudaError("kernel launch failure");
+    cudaThreadSynchronize();
 
-	 PowerKernal1<<<dimGrid,dimBlock>>>(d_A1, d_A2, N);
-	CUDA_SAFE_CALL( cudaThreadSynchronize() );
-	printf("execution time = %f\n", cutGetTimerValue(my_timer));
-
-	 //PowerKernalEmpty<<<dimGrid2,dimBlock2>>>(d_A3, N);
-	CUDA_SAFE_CALL( cudaThreadSynchronize() );
-	printf("execution time = %f\n", cutGetTimerValue(my_timer));
-	 getLastCudaError("kernel launch failure");
-
-	CUDA_SAFE_CALL( cudaThreadSynchronize() );
-	CUT_SAFE_CALL(cutStopTimer(my_timer));
-	TurnOffDAQ(taskhandle, cutGetTimerValue(my_timer));
-	printf("execution time = %f\n", cutGetTimerValue(my_timer));
-	CUT_SAFE_CALL(cutDeleteTimer(my_timer)); 
-
-	#ifdef _DEBUG
-	 checkCudaErrors( cudaDeviceSynchronize() );
-	#endif
-
-	 // Copy result from device memory to host memory
-
-	 CleanupResources();
-
-	 return 0;
+    checkCudaErrors(cudaEventDestroy(start));
+    checkCudaErrors(cudaEventDestroy(stop));
+    CleanupResources();
+	return 0;
 }
 
 void CleanupResources(void)
 {
-	  // Free device memory
-	  if (d_A1)
-		cudaFree(d_A1);
-	  if (d_A2)
-		cudaFree(d_A2);
-	  if (d_A3)
-		cudaFree(d_A3);
-	  // Free host memory
-	  if (h_A1)
-		free(h_A1);
-	  if (h_A2)
-		free(h_A2);
-	  if (h_A3)
-		free(h_A3);
+  // Free device memory
+  if (d_A1)
+	cudaFree(d_A1);
+  if (d_A2)
+	cudaFree(d_A2);
+  if (d_A3)
+	cudaFree(d_A3);
+  // Free host memory
+  if (h_A1)
+	free(h_A1);
+  if (h_A2)
+	free(h_A2);
+  if (h_A3)
+	free(h_A3);
 }
 
 // Allocates an array with random float entries.
@@ -262,9 +246,3 @@ void RandomInit_fp(float* data, int n)
 	data[i] = rand() / RAND_MAX;
    }
 }
-
-
-
-
-
-
