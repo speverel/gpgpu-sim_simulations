@@ -34,7 +34,7 @@
 # ################################################################################
 #
 # # Add source files here
-  EXECUTABLE      := mix1
+  EXECUTABLE      := mix7
 # # Cuda source files (compiled with cudacc)
   CUFILES         := kernel.cu
 # # C/C++ source files (compiled with gcc / c++)

@@ -34,7 +34,7 @@
 # ################################################################################
 #
 # # Add source files here
-  EXECUTABLE      := BE_SP_INT_MUL_16
+  EXECUTABLE      := BE_SP_INT_MUL_l16
 # # Cuda source files (compiled with cudacc)
   CUFILES         := BE_SP_INT_MUL_l16.cu
 # # C/C++ source files (compiled with gcc / c++)

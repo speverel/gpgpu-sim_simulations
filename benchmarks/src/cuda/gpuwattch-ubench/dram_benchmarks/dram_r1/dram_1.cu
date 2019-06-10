@@ -120,8 +120,8 @@ int main(int argc, char** argv)
 	dim3 dimGrid(NUM_OF_BLOCKS,1);
 	dim3 dimBlock(THREADS_PER_BLOCK,1);
 
+	checkCudaErrors(cudaEventRecord(start));
 	PowerKernal<<<dimGrid,dimBlock>>>(d_A, d_C, iterations);
-
 	checkCudaErrors(cudaEventRecord(stop));
 
 	checkCudaErrors(cudaEventSynchronize(stop));

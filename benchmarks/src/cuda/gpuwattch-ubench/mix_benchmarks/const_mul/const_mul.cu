@@ -108,9 +108,9 @@ int main(int argc, char** argv)
 	array3[i] = rand() / RAND_MAX;
  }
 
- cudaMemcpyToSymbol("ConstArray1", array1, sizeof(float) * THREADS_PER_BLOCK );
- cudaMemcpyToSymbol("ConstArray2", array2, sizeof(float) * THREADS_PER_BLOCK );
- cudaMemcpyToSymbol("ConstArray3", array3, sizeof(float) * THREADS_PER_BLOCK );
+ cudaMemcpyToSymbol(ConstArray1, array1, sizeof(float) * THREADS_PER_BLOCK );
+ cudaMemcpyToSymbol(ConstArray2, array2, sizeof(float) * THREADS_PER_BLOCK );
+ cudaMemcpyToSymbol(ConstArray3, array3, sizeof(float) * THREADS_PER_BLOCK );
  
  checkCudaErrors( cudaMalloc((void**)&d_Value, sizeof(float)) );
  //VecAdd<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C, N);

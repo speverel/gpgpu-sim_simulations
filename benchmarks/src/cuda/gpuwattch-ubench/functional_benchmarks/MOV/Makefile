@@ -34,9 +34,9 @@
 # ################################################################################
 #
 # # Add source files here
-  EXECUTABLE      := mix16
+  EXECUTABLE      := MOV
 # # Cuda source files (compiled with cudacc)
-  CUFILES         := kernel.cu
+  CUFILES         := MOV.cu
 # # C/C++ source files (compiled with gcc / c++)
   CCFILES         := \
 	#

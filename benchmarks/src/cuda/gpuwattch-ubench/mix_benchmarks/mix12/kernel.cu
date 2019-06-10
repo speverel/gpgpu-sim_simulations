@@ -169,14 +169,14 @@ int main(int argc, char** argv)
 		array8[i] = rand() / RAND_MAX;
 	 }
 	 
-	 cudaMemcpyToSymbol("ConstArray1", array1, sizeof(float) * THREADS_PER_BLOCK );
-	 cudaMemcpyToSymbol("ConstArray2", array2, sizeof(float) * THREADS_PER_BLOCK );
-	 cudaMemcpyToSymbol("ConstArray3", array3, sizeof(float) * THREADS_PER_BLOCK );
-	 cudaMemcpyToSymbol("ConstArray4", array4, sizeof(float) * THREADS_PER_BLOCK );
-	 cudaMemcpyToSymbol("ConstArray5", array5, sizeof(float) * THREADS_PER_BLOCK );
-	 cudaMemcpyToSymbol("ConstArray6", array6, sizeof(float) * THREADS_PER_BLOCK );
-	 cudaMemcpyToSymbol("ConstArray7", array7, sizeof(float) * THREADS_PER_BLOCK );
-	 cudaMemcpyToSymbol("ConstArray8", array8, sizeof(float) * THREADS_PER_BLOCK );
+	 cudaMemcpyToSymbol(ConstArray1, array1, sizeof(float) * THREADS_PER_BLOCK );
+	 cudaMemcpyToSymbol(ConstArray2, array2, sizeof(float) * THREADS_PER_BLOCK );
+	 cudaMemcpyToSymbol(ConstArray3, array3, sizeof(float) * THREADS_PER_BLOCK );
+	 cudaMemcpyToSymbol(ConstArray4, array4, sizeof(float) * THREADS_PER_BLOCK );
+	 cudaMemcpyToSymbol(ConstArray5, array5, sizeof(float) * THREADS_PER_BLOCK );
+	 cudaMemcpyToSymbol(ConstArray6, array6, sizeof(float) * THREADS_PER_BLOCK );
+	 cudaMemcpyToSymbol(ConstArray7, array7, sizeof(float) * THREADS_PER_BLOCK );
+	 cudaMemcpyToSymbol(ConstArray8, array8, sizeof(float) * THREADS_PER_BLOCK );
 	 
 	
 	int texmem_size = LINE_SIZE*SETS*ASSOC;	
@@ -198,15 +198,15 @@ int main(int argc, char** argv)
 	float *host_out = (float*) malloc(texmem_size*sizeof(float)*10);
 	float *device_out;
 
-	cudaMalloc((void**) &device_texture1, texmem_size);
-	cudaMalloc((void**) &device_texture2, texmem_size);
-	cudaMalloc((void**) &device_texture3, texmem_size);
-	cudaMalloc((void**) &device_texture4, texmem_size);
-	cudaMalloc((void**) &device_texture5, texmem_size);
-	cudaMalloc((void**) &device_texture6, texmem_size);
-	cudaMalloc((void**) &device_texture7, texmem_size);
-	cudaMalloc((void**) &device_texture8, texmem_size);
-	cudaMalloc((void**) &device_texture9, texmem_size);
+	cudaMalloc((void**) &device_texture1, texmem_size*sizeof(float));
+	cudaMalloc((void**) &device_texture2, texmem_size*sizeof(float));
+	cudaMalloc((void**) &device_texture3, texmem_size*sizeof(float));
+	cudaMalloc((void**) &device_texture4, texmem_size*sizeof(float));
+	cudaMalloc((void**) &device_texture5, texmem_size*sizeof(float));
+	cudaMalloc((void**) &device_texture6, texmem_size*sizeof(float));
+	cudaMalloc((void**) &device_texture7, texmem_size*sizeof(float));
+	cudaMalloc((void**) &device_texture8, texmem_size*sizeof(float));
+	cudaMalloc((void**) &device_texture9, texmem_size*sizeof(float));
 
 	cudaMalloc((void**) &device_out, texmem_size*10);
 
@@ -220,15 +220,15 @@ int main(int argc, char** argv)
 	cudaMemcpy(device_texture8, host_texture1, texmem_size*sizeof(float), cudaMemcpyHostToDevice);
 	cudaMemcpy(device_texture9, host_texture1, texmem_size*sizeof(float), cudaMemcpyHostToDevice);
 
-	cudaBindTexture(0, texmem1, device_texture1, texmem_size);
-	cudaBindTexture(0, texmem2, device_texture2, texmem_size);
-	cudaBindTexture(0, texmem3, device_texture3, texmem_size);
-	cudaBindTexture(0, texmem4, device_texture4, texmem_size);
-	cudaBindTexture(0, texmem5, device_texture5, texmem_size);
-	cudaBindTexture(0, texmem6, device_texture6, texmem_size);
-	cudaBindTexture(0, texmem7, device_texture7, texmem_size);
-	cudaBindTexture(0, texmem8, device_texture8, texmem_size);
-	cudaBindTexture(0, texmem9, device_texture9, texmem_size);
+	cudaBindTexture(0, texmem1, device_texture1, texmem_size*sizeof(float));
+	cudaBindTexture(0, texmem2, device_texture2, texmem_size*sizeof(float));
+	cudaBindTexture(0, texmem3, device_texture3, texmem_size*sizeof(float));
+	cudaBindTexture(0, texmem4, device_texture4, texmem_size*sizeof(float));
+	cudaBindTexture(0, texmem5, device_texture5, texmem_size*sizeof(float));
+	cudaBindTexture(0, texmem6, device_texture6, texmem_size*sizeof(float));
+	cudaBindTexture(0, texmem7, device_texture7, texmem_size*sizeof(float));
+	cudaBindTexture(0, texmem8, device_texture8, texmem_size*sizeof(float));
+	cudaBindTexture(0, texmem9, device_texture9, texmem_size*sizeof(float));
 
 
 	unsigned num_blocks = (texmem_size / MAX_THREADS_PER_BLOCK) + 1;

@@ -26,7 +26,6 @@ ADDITIONAL_LIBS := #-L$(NVIDIA_COMPUTE_SDK_LOCATION)/common/lib -lcutil_x86_64
 # Add new SM Versions here as devices with new Compute Capability are released
 SM_VERSIONS   := 10 11 12 13 20 21 30 50 60 62 70
 
-CUDA_INSTALL_PATH ?= /home/tgrogers-raid/a/common/cuda-4.2
 
 ifdef cuda-install
 	CUDA_INSTALL_PATH := $(cuda-install)
@@ -459,7 +458,7 @@ define SMVERSION_template
 OBJS += $(patsubst %.cu,$(OBJDIR)/%.cu_$(1).o,$(notdir $(CUFILES_sm_$(1))))
 $(OBJDIR)/%.cu_$(1).o : $(SRCDIR)%.cu $(CU_DEPS)
 #	$(VERBOSE)$(NVCC) -o $$@ -c $$< $(NVCCFLAGS)  $(1)
-	$(VERBOSE)$(NVCC) -gencode=arch=compute_$(1),code=\"sm_$(1),compute_$(1)\" $(GENCODE_SM30) -o $$@ -c $$< $(NVCCFLAGS)
+	$(VERBOSE)$(NVCC) -o0 -gencode=arch=compute_$(1),code=\"sm_$(1),compute_$(1)\" $(GENCODE_SM30) -o $$@ -c $$< $(NVCCFLAGS)
 endef
 
 # This line invokes the above template for each arch version stored in

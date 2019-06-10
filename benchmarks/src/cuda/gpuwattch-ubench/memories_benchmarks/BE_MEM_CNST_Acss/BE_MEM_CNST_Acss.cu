@@ -53,7 +53,7 @@ inline void __getLastCudaError(const char *errorMessage, const char *file, const
 
 
 // Device code
-__global__ void PowerKernal(unsigned* Value, int iterations)
+__global__ void PowerKernal(unsigned* Value, unsigned long long iterations)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     //Do Some Computation
@@ -75,7 +75,7 @@ __global__ void PowerKernal(unsigned* Value, int iterations)
 int main(int argc, char** argv) 
 {
 
- int iterations;
+ unsigned long long iterations;
  if (argc != 2){
   fprintf(stderr,"usage: %s #iterations\n",argv[0]);
   exit(1);
@@ -84,7 +84,7 @@ int main(int argc, char** argv)
   iterations = atoi(argv[1]);
  }
 
- printf("Power Microbenchmark with %d iterations\n",iterations);
+ printf("Power Microbenchmark with %llu iterations\n",iterations);
 
  unsigned array1[THREADS_PER_BLOCK];
  h_Value = (unsigned *) malloc(sizeof(unsigned));
@@ -98,8 +98,8 @@ int main(int argc, char** argv)
 	array2[i] = rand() / RAND_MAX;
  }
 
- cudaMemcpyToSymbol("ConstArray1", array1, sizeof(unsigned) * THREADS_PER_BLOCK );
- cudaMemcpyToSymbol("ConstArray2", array2, sizeof(unsigned) * THREADS_PER_BLOCK );
+ cudaMemcpyToSymbol(ConstArray1, array1, sizeof(unsigned) * THREADS_PER_BLOCK );
+ cudaMemcpyToSymbol(ConstArray2, array2, sizeof(unsigned) * THREADS_PER_BLOCK );
  checkCudaErrors( cudaMalloc((void**)&d_Value, sizeof(unsigned)) );
 
  cudaEvent_t start, stop;

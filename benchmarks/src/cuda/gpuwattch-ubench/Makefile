@@ -189,7 +189,7 @@ mix_benchmarks: common
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C mix_benchmarks/BE_SFU/$(OPT)
 	#$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C mix_benchmarks/PP_FP_MEM/$(OPT)
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C mix_benchmarks/BE_TEXTURE_ACCESS/$(OPT)
-	#$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C mix_benchmarks/add_mem_1/$(OPT)
+	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C mix_benchmarks/add_mem_1/$(OPT)
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C mix_benchmarks/add_mem_2/$(OPT)
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C mix_benchmarks/mul_add_tex_1/$(OPT)
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C mix_benchmarks/mul_add_tex_2/$(OPT)

@@ -177,8 +177,8 @@ int main(int argc, char** argv)
 		array2[i] = rand() / RAND_MAX;
 	 }
 
-	cudaMemcpyToSymbol("ConstArray1", array1, sizeof(float) * THREADS_PER_BLOCK );
-	cudaMemcpyToSymbol("ConstArray2", array2, sizeof(float) * THREADS_PER_BLOCK );
+	cudaMemcpyToSymbol(ConstArray1, array1, sizeof(float) * THREADS_PER_BLOCK );
+	cudaMemcpyToSymbol(ConstArray2, array2, sizeof(float) * THREADS_PER_BLOCK );
 	int N = THREADS_PER_BLOCK*NUM_OF_BLOCKS*2;
 	 
 	// Allocate input vectors h_A and h_B in host memory

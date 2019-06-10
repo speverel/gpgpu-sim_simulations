@@ -202,15 +202,15 @@ int main(int argc, char** argv)
 	float *device_texture8;
 	float *device_texture9;
 
-	cudaMalloc((void**) &device_texture1, N);
-	cudaMalloc((void**) &device_texture2, N);
-	cudaMalloc((void**) &device_texture3, N);
-	cudaMalloc((void**) &device_texture4, N);
-	cudaMalloc((void**) &device_texture5, N);
-	cudaMalloc((void**) &device_texture6, N);
-	cudaMalloc((void**) &device_texture7, N);
-	cudaMalloc((void**) &device_texture8, N);
-	cudaMalloc((void**) &device_texture9, N);
+	cudaMalloc((void**) &device_texture1, size1);
+	cudaMalloc((void**) &device_texture2, size1);
+	cudaMalloc((void**) &device_texture3, size1);
+	cudaMalloc((void**) &device_texture4, size1);
+	cudaMalloc((void**) &device_texture5, size1);
+	cudaMalloc((void**) &device_texture6, size1);
+	cudaMalloc((void**) &device_texture7, size1);
+	cudaMalloc((void**) &device_texture8, size1);
+	cudaMalloc((void**) &device_texture9, size1);
 
 	cudaMemcpy(device_texture1, host_texture1, N*sizeof(float), cudaMemcpyHostToDevice);
 	cudaMemcpy(device_texture2, host_texture1, N*sizeof(float), cudaMemcpyHostToDevice);
@@ -222,15 +222,15 @@ int main(int argc, char** argv)
 	cudaMemcpy(device_texture8, host_texture1, N*sizeof(float), cudaMemcpyHostToDevice);
 	cudaMemcpy(device_texture9, host_texture1, N*sizeof(float), cudaMemcpyHostToDevice);
 
-	cudaBindTexture(0, texmem1, device_texture1, N);
-	cudaBindTexture(0, texmem2, device_texture2, N);
-	cudaBindTexture(0, texmem3, device_texture3, N);
-	cudaBindTexture(0, texmem4, device_texture4, N);
-	cudaBindTexture(0, texmem5, device_texture5, N);
-	cudaBindTexture(0, texmem6, device_texture6, N);
-	cudaBindTexture(0, texmem7, device_texture7, N);
-	cudaBindTexture(0, texmem8, device_texture8, N);
-	cudaBindTexture(0, texmem9, device_texture9, N);
+	cudaBindTexture(0, texmem1, device_texture1, size1);
+	cudaBindTexture(0, texmem2, device_texture2, size1);
+	cudaBindTexture(0, texmem3, device_texture3, size1);
+	cudaBindTexture(0, texmem4, device_texture4, size1);
+	cudaBindTexture(0, texmem5, device_texture5, size1);
+	cudaBindTexture(0, texmem6, device_texture6, size1);
+	cudaBindTexture(0, texmem7, device_texture7, size1);
+	cudaBindTexture(0, texmem8, device_texture8, size1);
+	cudaBindTexture(0, texmem9, device_texture9, size1);
 
 	 dim3 dimGrid2(1,1);
 	 dim3 dimBlock2(1,1);

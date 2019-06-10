@@ -180,14 +180,14 @@ int main(int argc, char** argv)
 	float *device_texture1;
 	float *device_texture2;
 
-	cudaMalloc((void**) &device_texture1, N);
-	cudaMalloc((void**) &device_texture2, N);
+	cudaMalloc((void**) &device_texture1, N*sizeof(float));
+	cudaMalloc((void**) &device_texture2, N*sizeof(float));
 
 	cudaMemcpy(device_texture1, host_texture1, N*sizeof(float), cudaMemcpyHostToDevice);
 	cudaMemcpy(device_texture2, host_texture1, N*sizeof(float), cudaMemcpyHostToDevice);
 
-	cudaBindTexture(0, texmem1, device_texture1, N);
-	cudaBindTexture(0, texmem2, device_texture2, N);
+	cudaBindTexture(0, texmem1, device_texture1, N*sizeof(float));
+	cudaBindTexture(0, texmem2, device_texture2, N*sizeof(float));
 
 	 dim3 dimGrid2(1,1);
 	 dim3 dimBlock2(1,1);

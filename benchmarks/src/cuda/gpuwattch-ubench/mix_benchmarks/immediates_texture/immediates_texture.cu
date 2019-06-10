@@ -123,19 +123,19 @@ int main(int argc, char** argv)
  float *device_out;
  
  
- cudaMalloc((void**) &device_texture1, texmem_size);
- cudaMalloc((void**) &device_texture2, texmem_size);
- cudaMalloc((void**) &device_texture3, texmem_size);	
+ cudaMalloc((void**) &device_texture1, texmem_size*sizeof(float));
+ cudaMalloc((void**) &device_texture2, texmem_size*sizeof(float));
+ cudaMalloc((void**) &device_texture3, texmem_size*sizeof(float));	
 
- cudaMalloc((void**) &device_out, texmem_size*5);
+ cudaMalloc((void**) &device_out, texmem_size*sizeof(float)*5);
 
  cudaMemcpy(device_texture1, host_texture1, texmem_size*sizeof(float), cudaMemcpyHostToDevice);
  cudaMemcpy(device_texture2, host_texture1, texmem_size*sizeof(float), cudaMemcpyHostToDevice);
  cudaMemcpy(device_texture3, host_texture1, texmem_size*sizeof(float), cudaMemcpyHostToDevice);
  
- cudaBindTexture(0, texmem1, device_texture1, texmem_size);
- cudaBindTexture(0, texmem2, device_texture2, texmem_size);
- cudaBindTexture(0, texmem3, device_texture3, texmem_size);
+ cudaBindTexture(0, texmem1, device_texture1, texmem_size*sizeof(float));
+ cudaBindTexture(0, texmem2, device_texture2, texmem_size*sizeof(float));
+ cudaBindTexture(0, texmem3, device_texture3, texmem_size*sizeof(float));
  
  unsigned num_blocks = (texmem_size / MAX_THREADS_PER_BLOCK) + 1;
  dim3  grid( num_blocks, 1, 1);
