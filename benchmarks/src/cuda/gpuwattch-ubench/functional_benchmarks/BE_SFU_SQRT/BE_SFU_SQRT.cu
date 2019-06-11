@@ -78,11 +78,11 @@ __global__ void PowerKernal3(const float* A, const float* B, float* C, int itera
 
     //square root
     for(unsigned long k=0; k<iterations;k++) {
-	Value1=Value2*Value2;
-	Value1=sqrt(abs(Value1));
-	Value2=sqrt(abs(I2))*sqrt(abs(I2));
-	Value3=sqrt(abs(Value2));
-	Value2=sqrt(abs(Value1));
+  Value1=Value2;
+  Value1=sqrt(Value1);
+  Value2=sqrt(I2);
+  Value3=sqrt(Value2);
+  Value2=sqrt(Value1);
     }
 
 
