@@ -1,5 +1,5 @@
 active_cores: common
-	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C active_cores/BE_SP_FP_MUL/$(OPT)
+	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C active_cores/ACT_CORE/$(OPT)
 
 
 hysoonkim: common
@@ -297,7 +297,7 @@ cleandram: common
 	$(SETENV) make $(MAKE_ARGS) clean -C dram_benchmarks/dram_r12/$(OPT)
 
 cleanactive_cores: common
-	$(SETENV) make $(MAKE_ARGS) clean -C active_cores/BE_SP_FP_MUL/$(OPT)   
+	$(SETENV) make $(MAKE_ARGS) clean -C active_cores/ACT_CORE/$(OPT)   
 
 
 cleanfunctional: common

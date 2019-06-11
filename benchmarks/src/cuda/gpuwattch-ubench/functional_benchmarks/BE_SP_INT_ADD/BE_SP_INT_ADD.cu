@@ -109,6 +109,7 @@ int main(int argc, char** argv)
  int iterations;
  if(argc!=2) {
    fprintf(stderr,"usage: %s #iterations\n",argv[0]);
+   exit(1);
  }
  else {
    iterations = atoi(argv[1]);
