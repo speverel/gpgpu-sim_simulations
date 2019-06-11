@@ -94,7 +94,7 @@ dram_benchmarks: common
 	#$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C dram_benchmarks/dram_r12/$(OPT)
 
 functional_benchmarks: common
-  $(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C functional_benchmarks/MOV/$(OPT)
+	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C functional_benchmarks/MOV/$(OPT)
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C functional_benchmarks/BE_SP_INT_ADD/$(OPT)
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C functional_benchmarks/BE_SP_INT_DIV/$(OPT)
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C functional_benchmarks/BE_SP_INT_MUL/$(OPT)
