@@ -18,18 +18,18 @@
 //#define ITERATIONS 40
 
 // Variables
-unsigned long* h_A;
-unsigned long* h_B;
-unsigned long* h_C;
-unsigned long* d_A;
-unsigned long* d_B;
-unsigned long* d_C;
+unsigned* h_A;
+unsigned* h_B;
+unsigned* h_C;
+unsigned* d_A;
+unsigned* d_B;
+unsigned* d_C;
 //bool noprompt = false;
 //unsigned int my_timer;
 
 // Functions
 void CleanupResources(void);
-void RandomInit(unsigned long*, int);
+void RandomInit(unsigned*, int);
 //void ParseArguments(int, char**);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -66,27 +66,27 @@ inline void __getLastCudaError(const char *errorMessage, const char *file, const
 // Device code
 
 
-__global__ void PowerKernal3(const unsigned long* A, const unsigned long* B, unsigned long* C, int N)
+__global__ void PowerKernal3(const unsigned* A, const unsigned* B, unsigned* C, int N)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     //Do Some Computation
-    unsigned long Value1;
-    unsigned long Value2 = 999999;
-    unsigned long Value3;
-    unsigned long Value;
-    unsigned long I1=A[i];
-    unsigned long I2=B[i];
+    unsigned Value1;
+    unsigned Value2;
+    unsigned Value3;
+    unsigned Value;
+    unsigned I1=A[i];
+    unsigned I2=B[i];
 
 
 
     // Excessive Multiplication
     for(unsigned k=0; k<N;k++) {
-    	Value1=I1*I2;
-    	Value1*=Value2;
-    	Value3=Value1*I2;
-    	Value2*=I1*Value3;
-    	Value1*=Value2;
-      Value3*=Value1;
+    	Value1= __umul24(I1,I2);
+    	Value1 = __umul24(Value1,Value2); 
+    	Value3=__umul24(Value1,I2); 
+    	Value2= __umul24(Value2,__umul24(I1,Value3)); 
+    	Value1 = __umul24(Value1,Value2); 
+      Value3 = __umul24(Value3,Value1); 
     }
 
     __syncthreads();
@@ -113,13 +113,13 @@ int main(int argc, char** argv)
  
  printf("Power Microbenchmarks with iterations %d\n",iterations);
  int N = THREADS_PER_BLOCK*NUM_OF_BLOCKS;
- size_t size = N * sizeof(unsigned long);
+ size_t size = N * sizeof(unsigned);
  // Allocate input vectors h_A and h_B in host memory
- h_A = (unsigned long*)malloc(size);
+ h_A = (unsigned*)malloc(size);
  if (h_A == 0) CleanupResources();
- h_B = (unsigned long*)malloc(size);
+ h_B = (unsigned*)malloc(size);
  if (h_B == 0) CleanupResources();
- h_C = (unsigned long*)malloc(size);
+ h_C = (unsigned*)malloc(size);
  if (h_C == 0) CleanupResources();
 
  // Initialize input vectors
@@ -210,11 +210,11 @@ void CleanupResources(void)
 }
 
 // Allocates an array with random float entries.
-void RandomInit(unsigned long* data, int n)
+void RandomInit(unsigned* data, int n)
 {
   for (int i = 0; i < n; ++i){
 	srand((unsigned)time(0));  
-	data[i] = (unsigned long)(rand() / RAND_MAX);
+	data[i] = rand() / RAND_MAX;
   }
 }
 

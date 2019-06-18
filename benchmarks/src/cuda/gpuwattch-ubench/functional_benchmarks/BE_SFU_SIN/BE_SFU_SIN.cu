@@ -82,9 +82,8 @@ __global__ void PowerKernal2(const float* A, const float* B, float* C, int N)
         Value2=cos(Value1);
         Value3=sin(Value2);
         Value2=cos(Value1);
-    	Value1=sin(Value2);
+      Value1=sin(Value2);
     }
-
 
 
    Value=Value3-Value2;		

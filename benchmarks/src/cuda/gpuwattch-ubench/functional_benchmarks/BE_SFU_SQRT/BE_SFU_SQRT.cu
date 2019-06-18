@@ -16,7 +16,7 @@
 //#include <cuda_runtime.h>
 
 #define THREADS_PER_BLOCK 256
-#define NUM_OF_BLOCKS 64
+#define NUM_OF_BLOCKS 640
 //#define ITERATIONS 40
 
 // Variables
@@ -84,7 +84,6 @@ __global__ void PowerKernal3(const float* A, const float* B, float* C, int itera
   Value3=sqrt(Value2);
   Value2=sqrt(Value1);
     }
-
 
 
  
