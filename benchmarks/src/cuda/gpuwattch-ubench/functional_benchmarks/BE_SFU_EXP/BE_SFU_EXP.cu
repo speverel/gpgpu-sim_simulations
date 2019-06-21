@@ -64,10 +64,10 @@ __global__ void PowerKernal1(const float* A, const float* B, float* C, int itera
     float I2=B[i];   
     // exponential function
     for(unsigned k=0; k<iterations;k++) {
-      Value2=exp(Value1);
-      Value3=exp(Value2);
-      Value1=exp(Value3);
-      Value2=exp(Value1);
+      Value2=__expf(Value1);
+      Value3=__expf(Value2);
+      Value1=__expf(Value3);
+      Value2=__expf(Value1);
     }
 
   

@@ -8,8 +8,8 @@
 
 #include "l1d.h"
 
-#define THREADS_PER_BLOCK 32
-#define NUM_OF_BLOCKS 1
+#define THREADS_PER_BLOCK 256
+#define NUM_OF_BLOCKS 80
 #define LINE_SIZE 	128
 #define SETS		4
 #define ASSOC		256

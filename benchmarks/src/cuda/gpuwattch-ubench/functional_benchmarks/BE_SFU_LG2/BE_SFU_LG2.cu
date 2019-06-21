@@ -69,20 +69,18 @@ __global__ void PowerKernal4(const float* A, const float* B, float* C, int itera
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     //Do Some Computation
-    float Value1=0;
+    float Value1=A[i];
     float Value2=0;
     float Value3=0;
     float Value=0;
-    float I1=A[i];
-    float I2=B[i];
-
-
+    float I1=A[i];  
+    float I2=B[i];   
     // logarithmic
     for(unsigned k=0; k<iterations;k++) {
-    Value1=log2((I1));
-    Value2=log2((I2));
-    Value3=log2((Value2));
-    Value2=log2((Value1));
+      Value2=__log2f(Value1);
+      Value3=__log2f(Value2);
+      Value1=__log2f(Value3);
+      Value2=__log2f(Value1);
     }
 
 

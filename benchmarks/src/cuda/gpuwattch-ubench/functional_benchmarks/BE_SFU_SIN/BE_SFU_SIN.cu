@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 //#include <cutil.h>
-#include <math.h>
+//#include <math.h>
 // Includes
-//#include <stdio.h>
+#include <stdio.h>
 
 // includes, project
 //#include "../include/sdkHelper.h"  // helper for shared functions common to CUDA SDK samples
@@ -78,11 +78,11 @@ __global__ void PowerKernal2(const float* A, const float* B, float* C, int N)
     float I2=B[i];
 
     //sinusoidal functions
-    for(unsigned k=0; k<N;k++) {    
-        Value2=cos(Value1);
-        Value3=sin(Value2);
-        Value2=cos(Value1);
-      Value1=sin(Value2);
+    for(unsigned k=0; k<N;k++) {
+      Value2=__sinf(Value1);
+      Value3=__cosf(Value2);
+      Value1=__sinf(Value3);
+      Value2=__cosf(Value1);
     }
 
 
