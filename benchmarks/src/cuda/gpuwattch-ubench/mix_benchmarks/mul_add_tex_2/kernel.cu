@@ -18,13 +18,7 @@ unsigned int my_timer;
 
 texture<float,1,cudaReadModeElementType> texmem1;
 texture<float,1,cudaReadModeElementType> texmem2;
-texture<float,1,cudaReadModeElementType> texmem3;
-texture<float,1,cudaReadModeElementType> texmem4;
-texture<float,1,cudaReadModeElementType> texmem5;
-texture<float,1,cudaReadModeElementType> texmem6;
-texture<float,1,cudaReadModeElementType> texmem7;
-texture<float,1,cudaReadModeElementType> texmem8;
-texture<float,1,cudaReadModeElementType> texmem9;
+
 
 // Functions
 void CleanupResources(void);
@@ -75,27 +69,25 @@ __global__ void PowerKernal1(float *A, float *B, int N, int iterations)
 		for(unsigned i=0; i<iterations; ++i){
 
 			sum = tex1Dfetch(texmem1,tid)+B[tid];
+			sum+=tex1Dfetch(texmem1,tid);
+			sum*=mult;
+			sum+=tex1Dfetch(texmem2,tid);
+			sum*=mult;
+			sum+=tex1Dfetch(texmem1,tid);
+			sum*=mult;
+			sum+=tex1Dfetch(texmem2,tid);
+			sum*=mult;
+			sum+=tex1Dfetch(texmem1,tid);
+			sum*=mult;
+			sum+=tex1Dfetch(texmem2,tid);
+			sum*=mult;
+			sum+=tex1Dfetch(texmem1,tid);
+			sum*=mult;
+			sum+=tex1Dfetch(texmem2,tid);
+			sum*=mult;
+			sum+=tex1Dfetch(texmem1,tid);
+			sum*=mult;
 
-			for(unsigned j=1; j<=2; ++j){
-				sum+=tex1Dfetch(texmem1,tid*j);
-				sum*=mult;
-				sum+=tex1Dfetch(texmem2,tid*j);
-				sum*=mult;
-				sum+=tex1Dfetch(texmem3,tid*j);
-				sum*=mult;
-				sum+=tex1Dfetch(texmem4,tid*j);
-				sum*=mult;
-				sum+=tex1Dfetch(texmem5,tid*j);
-				sum*=mult;
-				sum+=tex1Dfetch(texmem6,tid*j);
-				sum*=mult;
-				sum+=tex1Dfetch(texmem7,tid*j);
-				sum*=mult;
-				sum+=tex1Dfetch(texmem8,tid*j);
-				sum*=mult;
-				sum+=tex1Dfetch(texmem9,tid*j);
-				sum*=mult;
-			}
 			A[tid*2] = sum;
 			B[tid] = A[tid*2]+A[tid];
 		}
@@ -194,43 +186,18 @@ int main(int argc, char** argv)
 	}
 	float *device_texture1;
 	float *device_texture2;
-	float *device_texture3;
-	float *device_texture4;
-	float *device_texture5;
-	float *device_texture6;
-	float *device_texture7;
-	float *device_texture8;
-	float *device_texture9;
+
 
 	cudaMalloc((void**) &device_texture1, size1);
 	cudaMalloc((void**) &device_texture2, size1);
-	cudaMalloc((void**) &device_texture3, size1);
-	cudaMalloc((void**) &device_texture4, size1);
-	cudaMalloc((void**) &device_texture5, size1);
-	cudaMalloc((void**) &device_texture6, size1);
-	cudaMalloc((void**) &device_texture7, size1);
-	cudaMalloc((void**) &device_texture8, size1);
-	cudaMalloc((void**) &device_texture9, size1);
+
 
 	cudaMemcpy(device_texture1, host_texture1, N*sizeof(float), cudaMemcpyHostToDevice);
 	cudaMemcpy(device_texture2, host_texture1, N*sizeof(float), cudaMemcpyHostToDevice);
-	cudaMemcpy(device_texture3, host_texture1, N*sizeof(float), cudaMemcpyHostToDevice);
-	cudaMemcpy(device_texture4, host_texture1, N*sizeof(float), cudaMemcpyHostToDevice);
-	cudaMemcpy(device_texture5, host_texture1, N*sizeof(float), cudaMemcpyHostToDevice);
-	cudaMemcpy(device_texture6, host_texture1, N*sizeof(float), cudaMemcpyHostToDevice);
-	cudaMemcpy(device_texture7, host_texture1, N*sizeof(float), cudaMemcpyHostToDevice);
-	cudaMemcpy(device_texture8, host_texture1, N*sizeof(float), cudaMemcpyHostToDevice);
-	cudaMemcpy(device_texture9, host_texture1, N*sizeof(float), cudaMemcpyHostToDevice);
 
 	cudaBindTexture(0, texmem1, device_texture1, size1);
 	cudaBindTexture(0, texmem2, device_texture2, size1);
-	cudaBindTexture(0, texmem3, device_texture3, size1);
-	cudaBindTexture(0, texmem4, device_texture4, size1);
-	cudaBindTexture(0, texmem5, device_texture5, size1);
-	cudaBindTexture(0, texmem6, device_texture6, size1);
-	cudaBindTexture(0, texmem7, device_texture7, size1);
-	cudaBindTexture(0, texmem8, device_texture8, size1);
-	cudaBindTexture(0, texmem9, device_texture9, size1);
+
 
 	 dim3 dimGrid2(1,1);
 	 dim3 dimBlock2(1,1);

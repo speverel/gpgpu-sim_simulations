@@ -75,7 +75,7 @@ __global__ void PowerKernal1(const unsigned* A, const unsigned* B, unsigned* C, 
     unsigned I1=A[i];
     unsigned I2=B[i];
 
-
+#pragma unroll 100
     //Excessive Logical Unit access
     for(unsigned k=0; k<N;k++) {
 

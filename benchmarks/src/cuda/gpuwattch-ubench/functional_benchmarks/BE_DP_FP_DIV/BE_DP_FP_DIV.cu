@@ -77,6 +77,7 @@ __global__ void PowerKernal3(const double* A, const double* B, double* C, int N)
 
     __syncthreads();
    // Excessive Division Operations
+    #pragma unroll 100
     for(unsigned k=0; k<N;k++) {
 	Value1=I1/I2;
 	Value3=I1/I2;

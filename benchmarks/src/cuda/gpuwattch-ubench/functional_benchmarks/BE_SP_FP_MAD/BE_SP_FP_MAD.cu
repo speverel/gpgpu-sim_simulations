@@ -69,15 +69,15 @@ __global__ void PowerKernal2(const float* A, const float* B, float* C, int itera
     float Value;
     float I1=A[i];
     float I2=B[i];
-
+#pragma unroll 100
     // Excessive Addition access
     for(unsigned k=0; k<iterations;k++) {
-	Value1=I1*I2+Value1;
-	Value3=I1*I2+Value2;
-	Value1*=Value2+Value1;
-	Value1*=Value2+Value3;
-	Value2=Value3*Value1+Value1;
-	Value1=Value2*Value3+Value3;
+  Value1= __fmaf_rn(I1,I2,Value1);
+  Value3= __fmaf_rn(I1,I2,Value2);
+  Value1= __fmaf_rn(Value1,Value2,Value1); 
+  Value1= __fmaf_rn(Value1,Value2,Value3); 
+  Value2= __fmaf_rn(Value3,Value1,Value1); 
+  Value1= __fmaf_rn(Value2,Value3,Value3); 
 //	Value1=I1*I2;
 //	Value3=Value1*I1;
 //	Value2=Value3*Value1;

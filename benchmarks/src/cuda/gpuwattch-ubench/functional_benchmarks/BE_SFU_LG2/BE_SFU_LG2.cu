@@ -76,6 +76,7 @@ __global__ void PowerKernal4(const float* A, const float* B, float* C, int itera
     float I1=A[i];  
     float I2=B[i];   
     // logarithmic
+    #pragma unroll 100
     for(unsigned k=0; k<iterations;k++) {
       Value2=__log2f(Value1);
       Value3=__log2f(Value2);

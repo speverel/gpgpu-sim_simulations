@@ -76,7 +76,7 @@ __global__ void PowerKernal2(const float* A, const float* B, float* C, int N)
     float Value=0;
     float I1=A[i];
     float I2=B[i];
-
+#pragma unroll 100
     //sinusoidal functions
     for(unsigned k=0; k<N;k++) {
       Value2=__sinf(Value1);

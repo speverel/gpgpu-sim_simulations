@@ -78,7 +78,7 @@ __global__ void PowerKernal3(const unsigned long* A, const unsigned long* B, uns
     unsigned long I2=B[i];
 
 
-
+#pragma unroll 100
     // Excessive Multiplication
     for(unsigned k=0; k<N;k++) {
     	Value1=I1*I2;

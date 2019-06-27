@@ -64,6 +64,7 @@ __global__ void PowerKernal2(const float* A, const float* B, float* C, int itera
 
   // Excessive Division access
   if((i%32)<=19){
+    #pragma unroll 100
     for(unsigned k=0; k<iterations;k++) {
       Value1=I1/I2;
       Value3=I1/I2;

@@ -71,14 +71,14 @@ __global__ void PowerKernal3(const unsigned* A, const unsigned* B, unsigned* C, 
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     //Do Some Computation
     unsigned Value1;
-    unsigned Value2;
+    unsigned Value2 = 999999;
     unsigned Value3;
     unsigned Value;
     unsigned I1=A[i];
     unsigned I2=B[i];
 
 
-
+#pragma unroll 100
     // Excessive Multiplication
     for(unsigned k=0; k<N;k++) {
     	Value1= __umul24(I1,I2);

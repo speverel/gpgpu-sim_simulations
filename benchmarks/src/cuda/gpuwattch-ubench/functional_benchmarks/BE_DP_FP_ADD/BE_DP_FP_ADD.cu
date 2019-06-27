@@ -74,7 +74,7 @@ __global__ void PowerKernal1(const double* A, const double* B, double* C, int it
     double Value=0;
     double I1=A[i];
     double I2=B[i];
-
+#pragma unroll 100
     // Excessive Addition access
     for(unsigned k=0; k<iterations;k++) {
     	Value1=I1+I2;

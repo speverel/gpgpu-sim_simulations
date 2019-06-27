@@ -64,7 +64,7 @@ __global__ void PowerKernal(const unsigned* A,unsigned* C, int iterations)
     unsigned I1=A[i];
     #pragma unroll 1
     //Excessive Logical Unit access
-    for(unsigned k=0; k<iterations*(blockDim.x+300);k++) {
+    for(unsigned k=0; k<iterations;k++) {
     // BLOCK-0 (For instruction size of 16 bytes)
     	__asm volatile (	
     	"B0: bra.uni B1;\n\t"

@@ -56,7 +56,7 @@ inline void __getLastCudaError(const char *errorMessage, const char *file, const
 }
 
 // end of CUDA Helper Functions
-__global__ void PowerKernal2(const float* A, const float* B, float* C, int N, long long iterations)
+__global__ void PowerKernal2(const float* A, const float* B, float* C, int N, int iterations)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     //Do Some Computation
@@ -66,11 +66,12 @@ __global__ void PowerKernal2(const float* A, const float* B, float* C, int N, lo
     float Value;
     float I1=A[i];
     float I2=B[i];
-
+    
     // Excessive Addition access
 //    if(((i%32)<=31))
     {
-    for(long long k=0; k<iterations;k++) {
+    #pragma unroll 100
+    for(int k=0; k<iterations;k++) {
 	Value1=I1*A[i];
 	Value3=I2*B[i];
 	Value1*=Value2;
@@ -88,14 +89,14 @@ __global__ void PowerKernal2(const float* A, const float* B, float* C, int N, lo
 
 int main(int argc, char** argv)
 {
-  long long iterations;
+  int iterations;
   unsigned blocks;
   if (argc != 3){
 	  fprintf(stderr,"usage: %s #iterations #cores\n",argv[0]);
 	  exit(1);
   }
   else {
-    iterations = atoll(argv[1]);
+    iterations = atoi(argv[1]);
     blocks = atoi(argv[2]);
   }
 

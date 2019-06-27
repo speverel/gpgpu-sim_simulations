@@ -105,6 +105,7 @@ functional_benchmarks: common
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C functional_benchmarks/BE_SP_FP_DIV/$(OPT)
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C functional_benchmarks/BE_SP_FP_MUL/$(OPT)
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C functional_benchmarks/BE_SP_FP_MAD/$(OPT)
+	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C functional_benchmarks/BE_DP_FP_MAD/$(OPT)
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C functional_benchmarks/BE_DP_FP_ADD/$(OPT)       
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C functional_benchmarks/BE_DP_FP_DIV/$(OPT)
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C functional_benchmarks/BE_DP_FP_MUL/$(OPT)   	
@@ -185,10 +186,10 @@ performance_benchmarks: common
 	
 
 mix_benchmarks: common	
-	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C mix_benchmarks/BE_SP_INT/$(OPT)
-	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C mix_benchmarks/BE_SP_FP/$(OPT)
+	#$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C mix_benchmarks/BE_SP_INT/$(OPT)
+	#$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C mix_benchmarks/BE_SP_FP/$(OPT)
 	#$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C mix_benchmarks/BE_SP_INT_FP
-	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C mix_benchmarks/BE_SFU/$(OPT)
+	#$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C mix_benchmarks/BE_SFU/$(OPT)
 	#$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C mix_benchmarks/PP_FP_MEM/$(OPT)
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C mix_benchmarks/BE_TEXTURE_ACCESS/$(OPT)
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C mix_benchmarks/add_mem_1/$(OPT)
@@ -313,6 +314,7 @@ cleanfunctional: common
 	$(SETENV) make $(MAKE_ARGS) clean -C functional_benchmarks/BE_SP_FP_DIV/$(OPT)
 	$(SETENV) make $(MAKE_ARGS) clean -C functional_benchmarks/BE_SP_FP_MUL/$(OPT)
 	$(SETENV) make $(MAKE_ARGS) clean -C functional_benchmarks/BE_SP_FP_MAD/$(OPT)
+	$(SETENV) make $(MAKE_ARGS) clean -C functional_benchmarks/BE_DP_FP_MAD/$(OPT)
 	$(SETENV) make $(MAKE_ARGS) clean -C functional_benchmarks/BE_DP_FP_ADD/$(OPT)
 	$(SETENV) make $(MAKE_ARGS) clean -C functional_benchmarks/BE_DP_FP_DIV/$(OPT)
 	$(SETENV) make $(MAKE_ARGS) clean -C functional_benchmarks/BE_DP_FP_MUL/$(OPT)

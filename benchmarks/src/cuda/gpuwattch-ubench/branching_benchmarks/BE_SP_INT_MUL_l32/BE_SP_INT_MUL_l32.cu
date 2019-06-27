@@ -64,6 +64,7 @@ __global__ void PowerKernal2(const unsigned* A, const unsigned* B, unsigned* C, 
 
   // Excessive INT addition access
   if((i%32)<=31){
+    #pragma unroll 100
     for(unsigned k=0; k<iterations;k++) {
       Value2= I1*Value1;
       Value3=I2*Value3;

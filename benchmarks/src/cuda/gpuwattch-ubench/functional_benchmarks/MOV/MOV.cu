@@ -69,30 +69,28 @@ __global__ void PowerKernal2(const unsigned* A, const unsigned* B, unsigned* C, 
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     //Do Some Computation
-    unsigned Value1=0;
-    unsigned Value2=0;
-    unsigned Value3=0;
-    unsigned Value=0;
     unsigned I1=A[i];
     unsigned I2=B[i];
-
-
-    // Excessive Addition access
+    unsigned Value2;
+    unsigned Value3;
+    unsigned Value1;
+    #pragma unroll 100
+    //Excessive Logical Unit access
     for(unsigned k=0; k<N;k++) {
-
-	Value2 = I1;
-	Value3 = I2;
-	Value1 = Value2;
-	Value3 = Value1;
-	Value2 = Value3;
-	Value1 = Value3;
-
+    // BLOCK-0 (For instruction size of 16 bytes for Volta
+      __asm volatile (
+          "\n\tmov.u32 %0, %3;"
+          "\n\tmov.u32 %1, %4;"
+          "\n\tmov.u32 %2, %1;"
+          "\n\tmov.u32 %1, %0;"
+          "\n\tmov.u32 %0, %2;"
+          "\n\tmov.u32 %1, %2;"
+          "\n\tmov.u32 %3, %1;"
+          "\n\tmov.u32 %4, %0;"
+          : "+r"(Value1), "+r"(Value2), "+r"(Value3) : "r"(I1), "r"(I2)
+          );
     }
-    __syncthreads();
- 
-    Value=Value1;
-
-    C[i]=Value;
+    C[i]=Value3;
     __syncthreads();
 
 }
