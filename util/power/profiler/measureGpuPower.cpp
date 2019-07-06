@@ -150,10 +150,11 @@ int processIsAlive(int pid)
 	return 0;
 }
 
-int measurePower(char* oFileName, int csv, int devId, nvmlDevice_t* dev, int sampleRate, int numSamples, nvmlUnit_t* unit, int printPsuInfo, int pid)
+int measurePower(char* oFileName, int csv, int devId, nvmlDevice_t* dev, int sampleRate, int numSamples, nvmlUnit_t* unit, int printPsuInfo, int pid, int temp_cutoff_T)
 {
     nvmlReturn_t res;
     unsigned int mWatts = 0;
+	unsigned int temperature = 0;
     nvmlPSUInfo_t psu;
     nvmlPstates_t pState;
 
@@ -180,6 +181,18 @@ int measurePower(char* oFileName, int csv, int devId, nvmlDevice_t* dev, int sam
 			printf("Application terminated. Closing profiler...\n");
 			return 0;
 		}
+		if (temp_cutoff_T)
+		{
+			res = nvmlDeviceGetTemperature( *dev, NVML_TEMPERATURE_GPU, &temperature );
+			if( res != NVML_SUCCESS ) {
+				printf("Error: failed to get temperature for device %i: %s\n", devId, nvmlErrorString(res));
+				return 0;
+			}
+			if (temperature >= temp_cutoff_T) {
+				printf("Cutoff temperature reached: concluding power measurements\n");
+				samplesRemaining = 1; // record the temperature one last time
+			}
+		}
         res = nvmlDeviceGetPowerUsage( *dev, &mWatts );
         if( res != NVML_SUCCESS ) {
             printf("Error: failed to get power for device %i: %s\n", devId, nvmlErrorString(res));
@@ -198,28 +211,30 @@ int measurePower(char* oFileName, int csv, int devId, nvmlDevice_t* dev, int sam
         }
 
         double watts = (double)mWatts / 1000.0;
-        if( csv ) {
-            if( oFileName ) {
-                if( !printPsuInfo )
-                    fprintf(f, "%.4lf, ", watts);
-                else
-                    fprintf(f, "%.4lf, %d\n", watts, pState);
-            } else {
-                if( !printPsuInfo )
-                    printf("%.4lf, ", watts);
-                else
-                    printf("%.4lf, %d\n", watts, pState);
-            }
-        } else {
-            if( oFileName ) {
-                fprintf(f, "Power draw = %.4lf W \n", watts);
-            } else {
-                if( !printPsuInfo )
-                    printf("Power draw = %.4lf W\n", watts);
-                else
-                    printf("Power draw = %.4lf W, power state = %d \n", watts, pState);
-            }
-        }
+		if (!temp_cutoff_T || samplesRemaining == 1) {
+			if( csv ) {
+				if( oFileName ) {
+					if( !printPsuInfo )
+						fprintf(f, "%.4lf, ", watts);
+					else
+						fprintf(f, "%.4lf, %d\n", watts, pState);
+				} else {
+					if( !printPsuInfo )
+						printf("%.4lf, ", watts);
+					else
+						printf("%.4lf, %d\n", watts, pState);
+				}
+			} else {
+				if( oFileName ) {
+					fprintf(f, "Power draw = %.4lf W \n", watts);
+				} else {
+					if( !printPsuInfo )
+						printf("Power draw = %.4lf W\n", watts);
+					else
+						printf("Power draw = %.4lf W, power state = %d \n", watts, pState);
+				}
+			}
+		}
 
         if( numSamples != -1 ) 
             samplesRemaining--;
@@ -245,16 +260,17 @@ void printHelp()
     printf("-n <number of samples>: \tNumber of power samples to collect (-1 == poll until CTRL+C)\n");
     printf("-p: \t\t\t\tPrint PSU info as well \n");
 	printf("-a: <process name>: \t\tApplication to profile with this profiler. Profiler will stop when process terminates\n");
+	printf("-t: <temp>:\t\tCutoff temperature in degrees C. Profiler will stop profiling if the GPU reaches this temperature\n");
 
     printf("\nCTRL+C will stop the power measurements and shutdown NVML\n");
     printf("=============================================================================================\n\n");
 }
 
-int parseOptions(int argc, char** argv, char** outFileName, int* csv, int* devId, int* sampleRate, int* numSamples, int* printPsuInfo, char** pname)
+int parseOptions(int argc, char** argv, char** outFileName, int* csv, int* devId, int* sampleRate, int* numSamples, int* printPsuInfo, char** pname, int* temp_cutoff_T)
 {
     int opt;
     opterr = 0;
-    while( (opt = getopt(argc, argv, "ho:cd:r:n:pa:")) != -1 ) {
+    while( (opt = getopt(argc, argv, "ho:cd:r:n:pa:t:")) != -1 ) {
         switch(opt) {
             case 'h':
                 printHelp();
@@ -288,6 +304,10 @@ int parseOptions(int argc, char** argv, char** outFileName, int* csv, int* devId
 				*pname = optarg;
 				break;
 
+			case 't':
+				*temp_cutoff_T = atoi(optarg);
+				break;
+
             default: 
                 printf("Error: unknown option\n");
                 return 0;
@@ -301,8 +321,9 @@ int parseOptions(int argc, char** argv, char** outFileName, int* csv, int* devId
             "\tSample Rate = %d ms\n"
             "\tNumber of power samples = %d\n"
             "\tPrint PSU info = %d\n"
-			"\tProcess Name = %s\n\n",
-            *outFileName, *csv, *devId, *sampleRate, *numSamples, *printPsuInfo, *pname);
+			"\tProcess Name = %s\n\n"
+			"\tTemperature Cutoff (0 iff disabled) = %d\n",
+            *outFileName, *csv, *devId, *sampleRate, *numSamples, *printPsuInfo, *pname, *temp_cutoff_T);
 
     return 1;
 }
@@ -323,11 +344,12 @@ int main(int argc, char** argv)
     int printPsuInfo = 0;
 	char* pname = NULL;
 	int pid = 0;
+	int temp_cutoff_T = 0;
 
     // Setup CTRL+C handler
     signal(SIGINT, intHandler);
 
-    ret = parseOptions(argc, argv, &oFileName, &csv, &devId, &sampleRate, &numSamples, &printPsuInfo, &pname);
+    ret = parseOptions(argc, argv, &oFileName, &csv, &devId, &sampleRate, &numSamples, &printPsuInfo, &pname, &temp_cutoff_T);
     if( !ret )
         return EXIT_FAILURE;
 
@@ -376,7 +398,7 @@ int main(int argc, char** argv)
 		printf("Got the pid\n");
 	}
 
-    if( !measurePower(oFileName, csv, devId, &dev, sampleRate, numSamples, &unit, printPsuInfo, pid) ) {
+    if( !measurePower(oFileName, csv, devId, &dev, sampleRate, numSamples, &unit, printPsuInfo, pid, temp_cutoff_T) ) {
         shutdown();
         return EXIT_FAILURE;
     }
