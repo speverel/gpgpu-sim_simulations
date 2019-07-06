@@ -362,7 +362,7 @@ endif
 ifeq ($(verbose), 1)
 	VERBOSE :=
 else
-	VERBOSE := @
+	VERBOSE := 
 endif
 
 ################################################################################
@@ -384,6 +384,11 @@ endif
 ifeq ($(ptxas), 1)
         NVCCFLAGS += --ptxas-options=-v
 endif
+
+ifdef flcm
+        NVCCFLAGS += --ptxas-options=-flcm=$(flcm)
+endif
+
 
 # Add cudacc flags
 NVCCFLAGS += $(CUDACCFLAGS)
@@ -510,4 +515,3 @@ clobber : clean
 	$(VERBOSE)rm -rf $(SHAREDDIR)/lib/*.a
 	$(VERBOSE)rm -rf $(COMMONDIR)/obj
 	$(VERBOSE)rm -rf $(SHAREDDIR)/obj
-

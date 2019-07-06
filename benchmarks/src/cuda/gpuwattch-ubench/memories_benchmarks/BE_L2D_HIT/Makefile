@@ -34,9 +34,9 @@
 # ################################################################################
 #
 # # Add source files here
-  EXECUTABLE      := l1r1
+  EXECUTABLE      := BE_L2D_HIT
 # # Cuda source files (compiled with cudacc)
-  CUFILES         := L1D_HIT.cu
+  CUFILES         := BE_L2D_HIT.cu
 # # C/C++ source files (compiled with gcc / c++)
   CCFILES         := \
 	#

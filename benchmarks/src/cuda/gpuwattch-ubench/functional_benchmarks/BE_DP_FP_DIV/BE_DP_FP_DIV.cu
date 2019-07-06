@@ -18,18 +18,18 @@
 //#include "../include/ContAcq-IntClk.h"
 
 // Variables
-double* h_A;
-double* h_B;
-double* h_C;
-double* d_A;
-double* d_B;
-double* d_C;
+float* h_A;
+float* h_B;
+float* h_C;
+float* d_A;
+float* d_B;
+float* d_C;
 //bool noprompt = false;
 //unsigned int my_timer;
 
 // Functions
 void CleanupResources(void);
-void RandomInit(double*, int);
+void RandomInit(float*, int);
 //void ParseArguments(int, char**);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -41,8 +41,8 @@ void RandomInit(double*, int);
 inline void __checkCudaErrors(cudaError err, const char *file, const int line )
 {
   if(cudaSuccess != err){
-	fprintf(stderr, "%s(%i) : CUDA Runtime API error %d: %s.\n",file, line, (int)err, cudaGetErrorString( err ) );
-	 exit(-1);
+  fprintf(stderr, "%s(%i) : CUDA Runtime API error %d: %s.\n",file, line, (int)err, cudaGetErrorString( err ) );
+   exit(-1);
   }
 }
 
@@ -53,8 +53,8 @@ inline void __getLastCudaError(const char *errorMessage, const char *file, const
 {
   cudaError_t err = cudaGetLastError();
   if (cudaSuccess != err){
-	fprintf(stderr, "%s(%i) : getLastCudaError() CUDA error : %s : (%d) %s.\n",file, line, errorMessage, (int)err, cudaGetErrorString( err ) );
-	exit(-1);
+  fprintf(stderr, "%s(%i) : getLastCudaError() CUDA error : %s : (%d) %s.\n",file, line, errorMessage, (int)err, cudaGetErrorString( err ) );
+  exit(-1);
   }
 }
 
@@ -63,39 +63,34 @@ inline void __getLastCudaError(const char *errorMessage, const char *file, const
 
 
 
-__global__ void PowerKernal3(const double* A, const double* B, double* C, int N)
+__global__ void PowerKernal3(const float* A, const float* B, float* C, int N)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     //Do Some Computation
     double Value1;
-    double Value2;
+    double Value2 = 999999;
     double Value3;
     double Value;
-    double I1=A[i];
-    double I2=B[i];
+    double I1= (double)A[i];
+    double I2= (double)B[i];
 
 
     __syncthreads();
-   // Excessive Division Operations
     #pragma unroll 100
+   // Excessive Division Operations
     for(unsigned k=0; k<N;k++) {
-	Value1=I1/I2;
-	Value3=I1/I2;
-	Value1/=Value2;
-	Value1/=Value2;
-	Value2=Value3/Value1;
-	Value1=Value2/Value3;
-	//	Value1=I1/I2;
-	//	Value3=I2/I1;
-	//	Value2=I1/Value3;
-	//	Value1/=Value2;
-	//	Value3/=Value1;
-	//	Value1/=Value3;
+  Value1=I1/I2;
+  Value3=I1/I2;
+  Value1/=Value2;
+  Value1/=Value2;
+  Value2=Value3/Value1;
+  Value1=Value2/Value3;
+
     }
 
     __syncthreads();
     Value=Value1;
-    C[i]=Value/Value2;
+    C[i]=(float)(Value/Value2);
 }
 
 
@@ -113,13 +108,13 @@ int main(int argc, char** argv)
  
  printf("Power Microbenchmarks with iterations %d\n",iterations);
  int N = THREADS_PER_BLOCK*NUM_OF_BLOCKS;
- size_t size = N * sizeof(double);
+ size_t size = N * sizeof(float);
  // Allocate input vectors h_A and h_B in host memory
- h_A = (double*)malloc(size);
+ h_A = (float*)malloc(size);
  if (h_A == 0) CleanupResources();
- h_B = (double*)malloc(size);
+ h_B = (float*)malloc(size);
  if (h_B == 0) CleanupResources();
- h_C = (double*)malloc(size);
+ h_C = (float*)malloc(size);
  if (h_C == 0) CleanupResources();
 
  // Initialize input vectors
@@ -195,27 +190,27 @@ void CleanupResources(void)
 {
   // Free device memory
   if (d_A)
-	cudaFree(d_A);
+  cudaFree(d_A);
   if (d_B)
-	cudaFree(d_B);
+  cudaFree(d_B);
   if (d_C)
-	cudaFree(d_C);
+  cudaFree(d_C);
 
   // Free host memory
   if (h_A)
-	free(h_A);
+  free(h_A);
   if (h_B)
-	free(h_B);
+  free(h_B);
   if (h_C)
-	free(h_C);
+  free(h_C);
 
 }
 
-// Allocates an array with random double entries.
-void RandomInit(double* data, int n)
+// Allocates an array with random float entries.
+void RandomInit(float* data, int n)
 {
   for (int i = 0; i < n; ++i){ 
-	data[i] = rand() / RAND_MAX;
+  data[i] = rand() / RAND_MAX;
   }
 }
 

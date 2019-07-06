@@ -17,9 +17,9 @@
 #define THREADS_PER_BLOCK 2048
 #define NUM_OF_BLOCKS 80
 #define NUM_SM 80
-#define LINE_SIZE   128
-#define SETS    4
-#define ASSOC   256
+#define LINE_SIZE 	128
+#define SETS		4
+#define ASSOC		256
 
 
 // Variables
@@ -46,8 +46,8 @@ void RandomInit(unsigned*, int);
 inline void __checkCudaErrors(cudaError err, const char *file, const int line )
 {
   if(cudaSuccess != err){
-  fprintf(stderr, "%s(%i) : CUDA Runtime API error %d: %s.\n",file, line, (int)err, cudaGetErrorString( err ) );
-   exit(-1);
+	fprintf(stderr, "%s(%i) : CUDA Runtime API error %d: %s.\n",file, line, (int)err, cudaGetErrorString( err ) );
+	 exit(-1);
   }
 }
 
@@ -58,8 +58,8 @@ inline void __getLastCudaError(const char *errorMessage, const char *file, const
 {
   cudaError_t err = cudaGetLastError();
   if (cudaSuccess != err){
-  fprintf(stderr, "%s(%i) : getLastCudaError() CUDA error : %s : (%d) %s.\n",file, line, errorMessage, (int)err, cudaGetErrorString( err ) );
-  exit(-1);
+	fprintf(stderr, "%s(%i) : getLastCudaError() CUDA error : %s : (%d) %s.\n",file, line, errorMessage, (int)err, cudaGetErrorString( err ) );
+	exit(-1);
   }
 }
 
@@ -73,30 +73,23 @@ __global__ void PowerKernal2( unsigned* A, unsigned* B, int N)
 
     // unsigned loadAddr = A+ i;
     // unsigned storeAddr = B+ i;
-    __device__  __shared__ unsigned sharedInp[THREADS_PER_BLOCK];
-    __device__  __shared__ unsigned sharedOut[THREADS_PER_BLOCK];
-
-   sharedInp[i] = A[i];
-    __syncthreads();
-
     unsigned load_value;
-    //unsigned sum_value = 0;
-    #pragma unroll 100
+	//unsigned sum_value = 0;
+	#pragma unroll 100
 
     for(unsigned k=0; k<N;k++) {
-      __asm volatile(
-        "ld.shared.u32 %0, [%1];" 
-        : "=r"(load_value) : "l"((unsigned long)(sharedInp+i))
-      );
-      //__asm volatile("add.u32 %0, %0, %1;" : "+r"(sum_value) : "r"(load_value));
-      __asm volatile(
-        "st.shared.u32 [%0], %1;"
-        : : "l"((unsigned long)(sharedOut+i)), "r"(load_value) 
-      );
+    	__asm volatile(
+    		"ld.global.ca.u32 %0, [%1];" 
+    		: "=r"(load_value) : "l"((unsigned long)(A+i))
+    	);
+    	//__asm volatile("add.u32 %0, %0, %1;" : "+r"(sum_value) : "r"(load_value));
+    	__asm volatile(
+    		"st.global.wb.u32 [%0], %1;"
+    		: : "l"((unsigned long)(B+i)), "r"(load_value) 
+    	);
 
     }
-
-    B[i] = sharedOut[i];
+    //B[i] = sum_value;
     __syncthreads();
 
 }
@@ -117,7 +110,7 @@ int main(int argc, char** argv)
  int size_per_sm = (LINE_SIZE*ASSOC*SETS); //131072
  int N = THREADS_PER_BLOCK*NUM_OF_BLOCKS;
 
- size_t size = size_per_sm*NUM_SM < N * sizeof(int) ? size_per_sm*NUM_SM : N * sizeof(int);
+ size_t size = size_per_sm*NUM_SM < N * sizeof(int) ? size_per_sm*NUM_OF_BLOCKS : N * sizeof(int);
  // Allocate input vectors h_A and h_B in host memory
  h_A = (unsigned*)malloc(size);
  if (h_A == 0) CleanupResources();
@@ -134,7 +127,7 @@ int main(int argc, char** argv)
  checkCudaErrors( cudaMalloc((void**)&d_B, size) );
 
 
- // Copy vector from host memory to device memory
+ // Copy vectors from host memory to device memory
  checkCudaErrors( cudaMemcpy(d_A, h_A, size, cudaMemcpyHostToDevice) );
 
 
@@ -159,8 +152,33 @@ int main(int argc, char** argv)
  getLastCudaError("kernel launch failure");              
  cudaThreadSynchronize(); 
 
+/* CUT_SAFE_CALL(cutCreateTimer(&my_timer)); 
+ TaskHandle taskhandle = LaunchDAQ();
+ CUT_SAFE_CALL(cutStartTimer(my_timer)); 
+ printf("execution time = %f\n", cutGetTimerValue(my_timer));
+
+profileKernel("BE_SP_INT_ADD", "PowerKernal2");
+for (int i = 0; i < 1000; i++)
+{
+	PowerKernal2<<<dimGrid,dimBlock>>>(d_A, d_B, d_C, N);
+	CUDA_SAFE_CALL( cudaThreadSynchronize() );
+}
+haltProfiling();
+printf("execution time = %f\n", cutGetTimerValue(my_timer));
+
+getLastCudaError("kernel launch failure");
+CUDA_SAFE_CALL( cudaThreadSynchronize() );
+CUT_SAFE_CALL(cutStopTimer(my_timer));
+TurnOffDAQ(taskhandle, cutGetTimerValue(my_timer));
+printf("execution time = %f\n", cutGetTimerValue(my_timer));
+CUT_SAFE_CALL(cutDeleteTimer(my_timer)); 
+
+#ifdef _DEBUG
+ checkCudaErrors( cudaDeviceSynchronize() );
+#endif*/
+
  // Copy result from device memory to host memory
- // h_B contains the result in host memory
+ // h_C contains the result in host memory
  checkCudaErrors( cudaMemcpy(h_B, d_B, size, cudaMemcpyDeviceToHost) );
   checkCudaErrors(cudaEventDestroy(start));
  checkCudaErrors(cudaEventDestroy(stop));
@@ -173,15 +191,15 @@ void CleanupResources(void)
 {
   // Free device memory
   if (d_A)
-  cudaFree(d_A);
+	cudaFree(d_A);
   if (d_B)
-  cudaFree(d_B);
+	cudaFree(d_B);
 
   // Free host memory
   if (h_A)
-  free(h_A);
+	free(h_A);
   if (h_B)
-  free(h_B);
+	free(h_B);
 
 }
 
@@ -189,7 +207,7 @@ void CleanupResources(void)
 void RandomInit(unsigned* data, int n)
 {
   for (int i = 0; i < n; ++i){
-  srand((unsigned)time(0));  
-  data[i] = rand() / RAND_MAX;
+	srand((unsigned)time(0));  
+	data[i] = rand() / RAND_MAX;
   }
 }

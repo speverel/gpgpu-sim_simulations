@@ -68,7 +68,7 @@ __global__ void PowerKernal3(const float* A, const float* B, float* C, int N)
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     //Do Some Computation
     float Value1;
-    float Value2;
+    float Value2 = 999999;
     float Value3;
     float Value;
     float I1=A[i];
@@ -85,12 +85,6 @@ __global__ void PowerKernal3(const float* A, const float* B, float* C, int N)
 	Value1/=Value2;
 	Value2=Value3/Value1;
 	Value1=Value2/Value3;
-	//	Value1=I1/I2;
-	//	Value3=I2/I1;
-	//	Value2=I1/Value3;
-	//	Value1/=Value2;
-	//	Value3/=Value1;
-	//	Value1/=Value3;
     }
 
     __syncthreads();
