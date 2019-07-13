@@ -160,8 +160,18 @@ __global__ void PowerKernal(const unsigned* A,unsigned* C, int iterations)
     	"B30: bra.uni B31;\n\t"
     	repeat8191("add.u32   %0, %1, 1;\n\t")
     	
-    	"B31: bra.uni LOOP;\n\t"
+        "B31: bra.uni B32;\n\t"
+        repeat8191("add.u32   %0, %1, 1;\n\t")
+
+        "B32: bra.uni B33;\n\t"
+        repeat8191("add.u32   %0, %1, 1;\n\t")
+
+        "B33: bra.uni B34;\n\t"
+        repeat8191("add.u32   %0, %1, 1;\n\t")
+
+    	"B34: bra.uni LOOP;\n\t"
     	repeat8191("add.u32   %0, %1, 1;\n\t")
+        
     	"LOOP:"
     	: "=r"(I1) : "r"(I1));
     	

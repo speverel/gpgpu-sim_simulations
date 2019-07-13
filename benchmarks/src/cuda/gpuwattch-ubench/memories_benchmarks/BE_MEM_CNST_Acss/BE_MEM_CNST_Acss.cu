@@ -6,19 +6,17 @@
 // includes CUDA
 #include <cuda_runtime.h>
 
-#define THREADS_PER_BLOCK 256
-#define NUM_OF_BLOCKS 640
+#define THREADS_PER_BLOCK 128
+#define NUM_OF_BLOCKS 80
 
 // Variables
 
-__constant__ unsigned ConstArray1[THREADS_PER_BLOCK];
-__constant__ unsigned ConstArray2[THREADS_PER_BLOCK];
+__constant__ unsigned ConstArray1[THREADS_PER_BLOCK*NUM_OF_BLOCKS];
 unsigned* h_Value;
 unsigned* d_Value;
 
 
 // Functions
-
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -53,20 +51,32 @@ inline void __getLastCudaError(const char *errorMessage, const char *file, const
 
 
 // Device code
-__global__ void PowerKernal(unsigned* Value, unsigned long long iterations)
+__global__ void PowerKernal(unsigned* Value, unsigned* const1, int iterations)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
-    //Do Some Computation
-    unsigned Value1;
-    unsigned Value2;
-    for(unsigned k=0; k<iterations;k++) {
-	Value1=ConstArray1[(i+k)%THREADS_PER_BLOCK];
-	Value2=ConstArray2[(i+k+1)%THREADS_PER_BLOCK];
-    }		
-         
-   
+
+    // unsigned loadAddr = A+ i;
+    // unsigned storeAddr = B+ i;
+    unsigned load_value;
+  unsigned sum_value = 0;
+  
+  #pragma unroll 100
+
+    for(int k=0; k<iterations;k++) {
+      //load_value+=ConstArray1[i];
+      __asm volatile(
+        "ld.const.u32 %0, [%1];" 
+        : "=r"(load_value) : "l"(&const1[i])
+      );
+      //__asm volatile("add.u32 %0, %0, %1;" : "+r"(sum_value) : "r"(load_value));
+      // __asm volatile(
+      //  "st.global.wb.u32 [%0], %1;"
+      //  : : "l"((unsigned long)(B+i)), "r"(load_value) 
+      // );
+
+    }
+    *Value = load_value;
     __syncthreads();
-   *Value=Value1+Value2;
 }
 
 
@@ -75,7 +85,7 @@ __global__ void PowerKernal(unsigned* Value, unsigned long long iterations)
 int main(int argc, char** argv) 
 {
 
- unsigned long long iterations;
+ int iterations;
  if (argc != 2){
   fprintf(stderr,"usage: %s #iterations\n",argv[0]);
   exit(1);
@@ -85,21 +95,17 @@ int main(int argc, char** argv)
  }
 
  printf("Power Microbenchmark with %llu iterations\n",iterations);
-
- unsigned array1[THREADS_PER_BLOCK];
+ int N = THREADS_PER_BLOCK*NUM_OF_BLOCKS;
+ unsigned array1[N];
  h_Value = (unsigned *) malloc(sizeof(unsigned));
- for(int i=0; i<THREADS_PER_BLOCK;i++){
+ for(int i=0; i<N;i++){
 	srand((unsigned)time(0));
 	array1[i] = rand() / RAND_MAX;
  }
- unsigned array2[THREADS_PER_BLOCK];
- for(int i=0; i<THREADS_PER_BLOCK;i++){
-	srand((unsigned)time(0));
-	array2[i] = rand() / RAND_MAX;
- }
 
- cudaMemcpyToSymbol(ConstArray1, array1, sizeof(unsigned) * THREADS_PER_BLOCK );
- cudaMemcpyToSymbol(ConstArray2, array2, sizeof(unsigned) * THREADS_PER_BLOCK );
+
+ cudaMemcpyToSymbol(ConstArray1, array1, sizeof(unsigned) * N );
+
  checkCudaErrors( cudaMalloc((void**)&d_Value, sizeof(unsigned)) );
 
  cudaEvent_t start, stop;
@@ -110,7 +116,7 @@ int main(int argc, char** argv)
  dim3 dimBlock(THREADS_PER_BLOCK,1);
 
  checkCudaErrors(cudaEventRecord(start));
- PowerKernal<<<dimGrid,dimBlock>>>(d_Value, iterations);
+ PowerKernal<<<dimGrid,dimBlock>>>(d_Value, ConstArray1, iterations);
  checkCudaErrors(cudaEventRecord(stop));
 
  checkCudaErrors(cudaEventSynchronize(stop));

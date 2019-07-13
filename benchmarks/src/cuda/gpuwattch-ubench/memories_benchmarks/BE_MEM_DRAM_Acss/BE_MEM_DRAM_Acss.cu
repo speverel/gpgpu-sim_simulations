@@ -17,9 +17,9 @@
 #define THREADS_PER_BLOCK 2048
 #define NUM_OF_BLOCKS 80
 #define NUM_SM 80
-#define LINE_SIZE 	64
-#define SETS		4096
-#define ASSOC		18
+#define LINE_SIZE   64
+#define SETS    4096
+#define ASSOC   18
 #define NUMTHREADS THREADS_PER_BLOCK*NUM_OF_BLOCKS
 
 // Variables
@@ -46,8 +46,8 @@ void RandomInit(unsigned*, unsigned long);
 inline void __checkCudaErrors(cudaError err, const char *file, const int line )
 {
   if(cudaSuccess != err){
-	fprintf(stderr, "%s(%i) : CUDA Runtime API error %d: %s.\n",file, line, (int)err, cudaGetErrorString( err ) );
-	 exit(-1);
+  fprintf(stderr, "%s(%i) : CUDA Runtime API error %d: %s.\n",file, line, (int)err, cudaGetErrorString( err ) );
+   exit(-1);
   }
 }
 
@@ -58,8 +58,8 @@ inline void __getLastCudaError(const char *errorMessage, const char *file, const
 {
   cudaError_t err = cudaGetLastError();
   if (cudaSuccess != err){
-	fprintf(stderr, "%s(%i) : getLastCudaError() CUDA error : %s : (%d) %s.\n",file, line, errorMessage, (int)err, cudaGetErrorString( err ) );
-	exit(-1);
+  fprintf(stderr, "%s(%i) : getLastCudaError() CUDA error : %s : (%d) %s.\n",file, line, errorMessage, (int)err, cudaGetErrorString( err ) );
+  exit(-1);
   }
 }
 
@@ -72,26 +72,26 @@ __global__ void PowerKernal2( unsigned* A, unsigned* B, int N)
     int i = blockDim.x * blockIdx.x + threadIdx.x;
 
     unsigned load_value;
-	//unsigned sum_value = 0;
-	unsigned * loadAddr = A+i;
-   	unsigned * storeAddr = B+i;
-   	unsigned size_l2 = (LINE_SIZE*ASSOC*SETS);
-   	unsigned stride = size_l2/sizeof(unsigned) -1;
-	#pragma unroll 100
-    for(unsigned iterations=0; iterations<N;iterations++) {   		
-    	// for(unsigned k =0; k<99; k++){
-	    	__asm volatile(
-	    		"ld.global.cv.u32 %0, [%1];" 
-	    		: "=r"(load_value) : "l"((unsigned long)(loadAddr))
-	    	);
-	    	//__asm volatile("add.u32 %0, %0, %1;" : "+r"(sum_value) : "r"(load_value));
-	    	__asm volatile(
-	    		"st.global.wt.u32 [%0], %1;"
-	    		: : "l"((unsigned long)(storeAddr)), "r"(load_value) 
-	    	);
-	    	loadAddr = loadAddr + stride;
-	    	storeAddr = storeAddr + stride;
-	    // }
+  //unsigned sum_value = 0;
+  unsigned * loadAddr = A+i;
+    unsigned * storeAddr = B+i;
+    unsigned size_l2 = (LINE_SIZE*ASSOC*SETS);
+    unsigned stride = size_l2/sizeof(unsigned) -1;
+  #pragma unroll 100
+    for(unsigned iterations=0; iterations<N;iterations++) {       
+      // for(unsigned k =0; k<99; k++){
+        __asm volatile(
+          "ld.global.cv.u32 %0, [%1];" 
+          : "=r"(load_value) : "l"((unsigned long)(loadAddr))
+        );
+        //__asm volatile("add.u32 %0, %0, %1;" : "+r"(sum_value) : "r"(load_value));
+        __asm volatile(
+          "st.global.wt.u32 [%0], %1;"
+          : : "l"((unsigned long)(storeAddr)), "r"(load_value) 
+        );
+        loadAddr = loadAddr + stride;
+        storeAddr = storeAddr + stride;
+      // }
     }
     //B[i] = sum_value;
     __syncthreads();
@@ -169,15 +169,15 @@ void CleanupResources(void)
 {
   // Free device memory
   if (d_A)
-	cudaFree(d_A);
+  cudaFree(d_A);
   if (d_B)
-	cudaFree(d_B);
+  cudaFree(d_B);
 
   // Free host memory
   if (h_A)
-	free(h_A);
+  free(h_A);
   if (h_B)
-	free(h_B);
+  free(h_B);
 
 }
 
@@ -185,7 +185,7 @@ void CleanupResources(void)
 void RandomInit(unsigned* data, unsigned long n)
 {
   for (unsigned long i = 0; i < n; ++i){
-	srand((unsigned)time(0));  
-	data[i] = rand() / RAND_MAX;
+  srand((unsigned)time(0));  
+  data[i] = rand() / RAND_MAX;
   }
 }
