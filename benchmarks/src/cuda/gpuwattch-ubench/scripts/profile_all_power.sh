@@ -31,28 +31,45 @@ samples=600
 sleep_time=15
 max_iter=2000000000
 SCRIPT_DIR=`pwd`
-BINDIR="$SCRIPT_DIR/../bin/linux/release"
+BINDIR="$SCRIPT_DIR/../../../../bin/9.1/release/"
 PROFILER="$SCRIPT_DIR/../tools/profiler"
 ITERATIONS_FILE="$SCRIPT_DIR/../iterations.cfg"
 benchmarks=`cat $ITERATIONS_FILE`
 #cd $PROF_DIR
 #make
 cd $BINDIR
-rm -r ./power_reports/
-mkdir ./power_reports/
+rm -r $SCRIPT_DIR/power_reports
+mkdir $SCRIPT_DIR/power_reports
 #dir_contents=`ls`
-for bm in $benchmarks
+
+for num_cores in 1 16 32 48 60 80
 do
-	bm_name=`echo $bm | cut -d "," -f 1`
-	iterations=`echo $bm | cut -d "," -f 2`
-	if [ -f $bm_name ] && [ -x $bm_name ]; then
-		echo "Starting profiling of $bm_name"
-		./$bm_name $max_iter &
-		$PROFILER -t $temp -r $rate -n $samples -o ./power_reports/$bm_name"-power.rpt"
-		pid=`nvidia-smi | grep $bm_name | sed -e 's/| \+[0-9] \+//' | sed -e 's/ \+.*//'`
-		echo "Profiling concluded. Killing $bm_name"
+	bm_name="ACT_CORE"
+	#if [ -f "ACT_CORE" ] && [ -x "ACT_CORE" ]; then
+		echo "Starting profiling of ACT_CORE_$num_cores"
+		./ACT_CORE $max_iter $num_cores &
+		$PROFILER -t $temp -r $rate -n $samples -o $SCRIPT_DIR/power_reports/ACT_CORE_$num_cores"-power.rpt"
+		pid=`nvidia-smi | grep "ACT_CORE" | sed -e 's/| \+[0-9] \+//' | sed -e 's/ \+.*//'`
+		echo "Profiling concluded. Killing ACT_CORE_$num_cores"
 		kill -9 $pid
 		echo "Sleeping..."
 		sleep $sleep_time
-	fi	
+	#fi	
+done
+
+
+for bm in $benchmarks
+do
+	bm_name=`echo $bm | cut -d "," -f 1`
+	#iterations=`echo $bm | cut -d "," -f 2`
+	#if [ -f $bm_name ] && [ -x $bm_name ]; then
+		echo "Starting profiling of $bm_name"
+		./$bm_name $max_iter &
+		$PROFILER -t $temp -r $rate -n $samples -o $SCRIPT_DIR/power_reports/$bm_name"-power.rpt"
+		pid=`nvidia-smi | grep $bm_name | sed -e 's/| \+[0-9] \+//' | sed -e 's/ \+.*//'`
+		echo "Profiling concluded. Killing $bm_name with pid: $pid"
+		kill -9 $pid
+		echo "Sleeping..."
+		sleep $sleep_time
+	#fi	
 done

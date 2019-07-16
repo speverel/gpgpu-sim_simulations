@@ -14,13 +14,8 @@
 // includes CUDA
 #include <cuda_runtime.h>
 
-#define THREADS_PER_BLOCK 2048
-#define NUM_OF_BLOCKS 80
-#define NUM_SM 80
-#define LINE_SIZE   128
-#define SETS    4
-#define ASSOC   256
-
+#define THREADS_PER_BLOCK 1024
+#define NUM_OF_BLOCKS 160
 
 // Variables
 unsigned* h_A;
@@ -69,34 +64,39 @@ inline void __getLastCudaError(const char *errorMessage, const char *file, const
 
 __global__ void PowerKernal2( unsigned* A, unsigned* B, int N)
 {
-    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    int tid = threadIdx.x;
+    int i = blockDim.x * blockIdx.x + tid;
+    
 
-    // unsigned loadAddr = A+ i;
-    // unsigned storeAddr = B+ i;
-    __device__  __shared__ unsigned sharedInp[THREADS_PER_BLOCK];
-    __device__  __shared__ unsigned sharedOut[THREADS_PER_BLOCK];
+    __device__  __shared__  volatile unsigned sharedInp[THREADS_PER_BLOCK];
+    __device__  __shared__  volatile unsigned sharedOut[THREADS_PER_BLOCK];
 
-   sharedInp[i] = A[i];
+   sharedInp[tid] = A[i];
     __syncthreads();
 
     unsigned load_value;
+    volatile unsigned* loadAddr = sharedInp+ tid;
+    volatile unsigned* storeAddr = sharedOut+ tid;
     //unsigned sum_value = 0;
     #pragma unroll 100
 
     for(unsigned k=0; k<N;k++) {
-      __asm volatile(
-        "ld.shared.u32 %0, [%1];" 
-        : "=r"(load_value) : "l"((unsigned long)(sharedInp+i))
-      );
-      //__asm volatile("add.u32 %0, %0, %1;" : "+r"(sum_value) : "r"(load_value));
-      __asm volatile(
-        "st.shared.u32 [%0], %1;"
-        : : "l"((unsigned long)(sharedOut+i)), "r"(load_value) 
-      );
+      // __asm volatile(
+      //   "ld.shared.u32 %0, [%1]; \n" 
+        
+      //   "st.shared.u32 [%2], %0;"
+      //   : "+r"(load_value) : "l"((loadAddr )) , "l"((storeAddr))
+
+      // );
+
+
+        load_value = *loadAddr;
+        *storeAddr = load_value;
+
 
     }
 
-    B[i] = sharedOut[i];
+    B[i] = sharedOut[tid];
     __syncthreads();
 
 }
@@ -114,10 +114,10 @@ int main(int argc, char** argv)
  }
  
  printf("Power Microbenchmarks with iterations %d\n",iterations);
- int size_per_sm = (LINE_SIZE*ASSOC*SETS); //131072
+ 
  int N = THREADS_PER_BLOCK*NUM_OF_BLOCKS;
 
- size_t size = size_per_sm*NUM_SM < N * sizeof(int) ? size_per_sm*NUM_SM : N * sizeof(int);
+ size_t size = N * sizeof(unsigned);
  // Allocate input vectors h_A and h_B in host memory
  h_A = (unsigned*)malloc(size);
  if (h_A == 0) CleanupResources();
@@ -146,8 +146,7 @@ int main(int argc, char** argv)
  //VecAdd<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C, N);
  dim3 dimGrid(NUM_OF_BLOCKS,1);
  dim3 dimBlock(THREADS_PER_BLOCK,1);
- dim3 dimGrid2(1,1);
- dim3 dimBlock2(1,1);
+
 
  checkCudaErrors(cudaEventRecord(start));              
  PowerKernal2<<<dimGrid,dimBlock>>>(d_A, d_B,iterations);  

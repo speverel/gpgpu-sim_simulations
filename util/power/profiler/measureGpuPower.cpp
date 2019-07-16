@@ -157,11 +157,11 @@ int measurePower(char* oFileName, int csv, int devId, nvmlDevice_t* dev, int sam
 	unsigned int temperature = 0;
     nvmlPSUInfo_t psu;
     nvmlPstates_t pState;
-
     int samplesRemaining = (numSamples == -1 ? 1 : numSamples);
-
-
+    double avgWatts = 0.0; 
+    unsigned int sampleCount = 0;
     FILE *f;
+    nvmlUtilization_t util;
     
     if( oFileName ) {
         f = fopen(oFileName, "w");
@@ -176,11 +176,26 @@ int measurePower(char* oFileName, int csv, int devId, nvmlDevice_t* dev, int sam
     while( samplesRemaining > 0 ) {
         // Throttle to sample rate
         usleep(sampleRate * 1000.0);
+        //increment number of samples processed
+        
 
 		if (pid != 0 && processIsAlive(pid) == 0) {
 			printf("Application terminated. Closing profiler...\n");
 			return 0;
 		}
+        res = nvmlDeviceGetUtilizationRates ( *dev, &util);
+
+        if(util.gpu != 100) {
+            if (samplesRemaining >1){
+                samplesRemaining--;
+                continue;
+            }
+            else
+                break;
+        }
+
+        
+
 		if (temp_cutoff_T)
 		{
 			res = nvmlDeviceGetTemperature( *dev, NVML_TEMPERATURE_GPU, &temperature );
@@ -191,6 +206,8 @@ int measurePower(char* oFileName, int csv, int devId, nvmlDevice_t* dev, int sam
 			if (temperature >= temp_cutoff_T) {
 				printf("Cutoff temperature reached: concluding power measurements\n");
 				samplesRemaining = 1; // record the temperature one last time
+                avgWatts = 0.0;
+                sampleCount = 0;
 			}
 		}
         res = nvmlDeviceGetPowerUsage( *dev, &mWatts );
@@ -201,8 +218,6 @@ int measurePower(char* oFileName, int csv, int devId, nvmlDevice_t* dev, int sam
 
         if( printPsuInfo ) {
             res = nvmlDeviceGetPerformanceState(*dev, &pState);
-
-
             //res = nvmlUnitGetPsuInfo(*unit, &psu);
             if( res != NVML_SUCCESS ) {
                 printf("Error: failed to get pState info for device %i: %s\n", devId, nvmlErrorString(res));
@@ -211,30 +226,8 @@ int measurePower(char* oFileName, int csv, int devId, nvmlDevice_t* dev, int sam
         }
 
         double watts = (double)mWatts / 1000.0;
-		if (!temp_cutoff_T || samplesRemaining == 1) {
-			if( csv ) {
-				if( oFileName ) {
-					if( !printPsuInfo )
-						fprintf(f, "%.4lf, ", watts);
-					else
-						fprintf(f, "%.4lf, %d\n", watts, pState);
-				} else {
-					if( !printPsuInfo )
-						printf("%.4lf, ", watts);
-					else
-						printf("%.4lf, %d\n", watts, pState);
-				}
-			} else {
-				if( oFileName ) {
-					fprintf(f, "Power draw = %.4lf W \n", watts);
-				} else {
-					if( !printPsuInfo )
-						printf("Power draw = %.4lf W\n", watts);
-					else
-						printf("Power draw = %.4lf W, power state = %d \n", watts, pState);
-				}
-			}
-		}
+        avgWatts += watts;
+        sampleCount++;
 
         if( numSamples != -1 ) 
             samplesRemaining--;
@@ -244,6 +237,35 @@ int measurePower(char* oFileName, int csv, int devId, nvmlDevice_t* dev, int sam
             break;
          }
     }
+
+    if (sampleCount == 0) 
+        avgWatts = 0.0;
+    else 
+        avgWatts /= sampleCount;
+    if( csv ) {
+        if( oFileName ) {
+            if( !printPsuInfo )
+                fprintf(f, "%.4lf, ", avgWatts);
+            else
+                fprintf(f, "%.4lf, %d\n", avgWatts, pState);
+        } else {
+            if( !printPsuInfo )
+                printf("%.4lf, ", avgWatts);
+            else
+                printf("%.4lf, %d\n", avgWatts, pState);
+        }
+    } else {
+        if( oFileName ) {
+            fprintf(f, "Power draw = %.4lf W \n", avgWatts);
+        } else {
+            if( !printPsuInfo )
+                printf("Power draw = %.4lf W\n", avgWatts);
+            else
+                printf("Power draw = %.4lf W, power state = %d \n", avgWatts, pState);
+        }
+    }
+        
+
 
     printf("\n\n");
     return 1;
@@ -336,7 +358,7 @@ int main(int argc, char** argv)
     int ret = 0;
 
     // Defaults
-    int devId = 0;
+    int devId = 2;
     int sampleRate = 100;
     int numSamples = -1;
     char* oFileName = NULL;

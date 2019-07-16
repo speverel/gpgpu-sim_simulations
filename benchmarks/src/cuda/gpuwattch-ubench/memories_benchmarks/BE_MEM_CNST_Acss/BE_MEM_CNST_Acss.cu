@@ -94,7 +94,7 @@ int main(int argc, char** argv)
   iterations = atoi(argv[1]);
  }
 
- printf("Power Microbenchmark with %llu iterations\n",iterations);
+ printf("Power Microbenchmark with %d iterations\n",iterations);
  int N = THREADS_PER_BLOCK*NUM_OF_BLOCKS;
  unsigned array1[N];
  h_Value = (unsigned *) malloc(sizeof(unsigned));

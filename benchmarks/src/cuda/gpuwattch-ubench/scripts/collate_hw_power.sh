@@ -1,10 +1,10 @@
 #!/bin/bash
 
 SCRIPT_DIR=`pwd`
-BINDIR="$SCRIPT_DIR/../bin/linux/release"
+
 output_file=collated_power.txt
-if [ -e "$BINDIR/power_reports" ] && [ -d "$BINDIR/power_reports" ]; then
-	cd "$BINDIR/power_reports" 
+if [ -e "$SCRIPT_DIR/power_reports" ] && [ -d "$SCRIPT_DIR/power_reports" ]; then
+	cd "$SCRIPT_DIR/power_reports" 
 	if [ -e "$output_file" ]; then
 		rm "$output_file"
 	fi
@@ -20,5 +20,5 @@ else
 	echo "Power reports directory not found"
 	exit 1
 fi
-cd $BINDIR/power_reports/
+
 

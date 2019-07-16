@@ -79,6 +79,8 @@ __global__ void PowerKernal1(float *A, float *B, int N, int iterations)
 			B[tid] = A[tid*2]+A[tid];
 		}
 	}
+
+	__syncthreads();
 }
 
 
@@ -155,7 +157,7 @@ int main(int argc, char** argv)
     }
 
     printf("Power Microbenchmark with %d iterations\n",iterations);
-	 int N = THREADS_PER_BLOCK*NUM_OF_BLOCKS*2;
+	 int N = THREADS_PER_BLOCK*NUM_OF_BLOCKS*4;
 	 
 	 // Allocate input vectors h_A and h_B in host memory
  	 size_t size1 = N * sizeof(float);
@@ -180,8 +182,8 @@ int main(int argc, char** argv)
 	cudaMemcpy(device_texture1, host_texture1, N*sizeof(float), cudaMemcpyHostToDevice);
 	cudaMemcpy(device_texture2, host_texture1, N*sizeof(float), cudaMemcpyHostToDevice);
 
-	cudaBindTexture(0, texmem1, device_texture1, N*sizeof(float));
-	cudaBindTexture(0, texmem2, device_texture2, N*sizeof(float));
+	checkCudaErrors(cudaBindTexture(0, texmem1, device_texture1, N*sizeof(float)));
+	checkCudaErrors(cudaBindTexture(0, texmem2, device_texture2, N*sizeof(float)));
 
 	 dim3 dimGrid2(1,1);
 	 dim3 dimBlock2(1,1);
@@ -220,6 +222,8 @@ int main(int argc, char** argv)
   	printf("gpu execution time = %.2f s\n", elapsedTime/1000);
   	getLastCudaError("kernel launch failure");
   	cudaThreadSynchronize();
+  	checkCudaErrors(cudaUnbindTexture(texmem1));
+  	checkCudaErrors(cudaUnbindTexture(texmem2));
   	checkCudaErrors(cudaEventDestroy(start));
   	checkCudaErrors(cudaEventDestroy(stop));
 	CleanupResources();

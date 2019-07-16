@@ -14,13 +14,14 @@
 // includes CUDA
 #include <cuda_runtime.h>
 
-#define THREADS_PER_BLOCK 2048
-#define NUM_OF_BLOCKS 80
+#define THREADS_PER_BLOCK 256
+#define NUM_OF_BLOCKS 640
 #define NUM_SM 80
 #define LINE_SIZE   64
 #define SETS    4096
 #define ASSOC   18
 #define NUMTHREADS THREADS_PER_BLOCK*NUM_OF_BLOCKS
+#define ITERATIONS 100
 
 // Variables
 unsigned* h_A;
@@ -73,13 +74,16 @@ __global__ void PowerKernal2( unsigned* A, unsigned* B, int N)
 
     unsigned load_value;
   //unsigned sum_value = 0;
-  unsigned * loadAddr = A+i;
-    unsigned * storeAddr = B+i;
+  // unsigned * loadAddr = &A[i];
+  //   unsigned * storeAddr = &B[i];
     unsigned size_l2 = (LINE_SIZE*ASSOC*SETS);
     unsigned stride = size_l2/sizeof(unsigned) -1;
-  #pragma unroll 100
-    for(unsigned iterations=0; iterations<N;iterations++) {       
-      // for(unsigned k =0; k<99; k++){
+    #pragma unroll 100
+    for(unsigned iterations=0; iterations<N;iterations++) {    
+        unsigned * loadAddr = &A[i];
+        unsigned * storeAddr = &B[i];
+        #pragma unroll 10
+       for(unsigned k =0; k<ITERATIONS; k++){
         __asm volatile(
           "ld.global.cv.u32 %0, [%1];" 
           : "=r"(load_value) : "l"((unsigned long)(loadAddr))
@@ -91,7 +95,7 @@ __global__ void PowerKernal2( unsigned* A, unsigned* B, int N)
         );
         loadAddr = loadAddr + stride;
         storeAddr = storeAddr + stride;
-      // }
+       }
     }
     //B[i] = sum_value;
     __syncthreads();
@@ -113,8 +117,8 @@ int main(int argc, char** argv)
  printf("Power Microbenchmarks with iterations %d\n",iterations);
 
  unsigned long size_l2 = (LINE_SIZE*ASSOC*SETS);
- unsigned long N = size_l2*iterations;
- size_t size = N * sizeof(int);
+ unsigned long N = size_l2*ITERATIONS;
+ size_t size = N * sizeof(unsigned);
  // Allocate input vectors h_A and h_B in host memory
  h_A = (unsigned*)malloc(size);
  if (h_A == 0) CleanupResources();
@@ -185,7 +189,7 @@ void CleanupResources(void)
 void RandomInit(unsigned* data, unsigned long n)
 {
   for (unsigned long i = 0; i < n; ++i){
-  srand((unsigned)time(0));  
-  data[i] = rand() / RAND_MAX;
+  //srand((unsigned)time(0));  
+  data[i] = i;
   }
 }
