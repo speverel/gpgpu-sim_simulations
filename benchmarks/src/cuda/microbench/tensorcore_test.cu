@@ -308,6 +308,7 @@ void check_configuration(int layout_a,int layout_b,int layout_c,int layout_d){
   	cudaErrCheck(cudaMalloc((void**)&b_htype, MATRIX_K * MATRIX_N * sizeof(host_type)));
   	cudaErrCheck(cudaMalloc((void**)&c_htype, MATRIX_M * MATRIX_N * sizeof(host_type)));
   	cudaErrCheck(cudaMalloc((void**)&d_htype, MATRIX_M * MATRIX_N * sizeof(host_type)));
+
   	cudaErrCheck(cudaMalloc((void**)&a_atype, MATRIX_M * MATRIX_K * sizeof(atype)));
   	cudaErrCheck(cudaMalloc((void**)&b_btype, MATRIX_K * MATRIX_N * sizeof(btype)));
   	cudaErrCheck(cudaMalloc((void**)&c_ctype, MATRIX_M * MATRIX_N * sizeof(ctype)));
@@ -363,6 +364,8 @@ void check_configuration(int layout_a,int layout_b,int layout_c,int layout_d){
 	layout_d_config=(layout_d==ROW_MAJOR)?wmma::mem_row_major:wmma::mem_col_major;
 
   	wmma_example<atype,btype,ctype,dtype,layout_a_config,layout_b_config> <<< NUM_CTA,WARP_IN_CTA*THREAD_IN_WARP>>> (a_atype, b_btype, c_ctype, d_dtype,layout_c_config,layout_d_config,stride_a,stride_b,stride_c,stride_d);
+  	
+
   	convert<host_type,dtype> <<< (MATRIX_M * MATRIX_N + 255) / 256, 256 >>> (d_htype, d_dtype, MATRIX_M * MATRIX_N);
 
   	printf("\nChecking results...\n");

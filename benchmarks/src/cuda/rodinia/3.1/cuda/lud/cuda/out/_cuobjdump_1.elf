@@ -1,0 +1,19 @@
+64bit elf: type=2, abi=7, sm=70, toolkit=91, flags = 0x460546
+Sections:
+Index Offset   Size ES Align   Type   Flags Link     Info Name
+    1     40     3f  0  1    STRTAB       0    0        0 .shstrtab
+    2     7f     3f  0  1    STRTAB       0    0        0 .strtab
+    3     c0     18 18  8    SYMTAB       0    2        0 .symtab
+    4     d8      0  0  1  PROGBITS       0    0        0 .debug_frame
+
+.section .strtab
+
+.section .shstrtab
+
+.section .symtab
+ index           value           size      info    other  shndx    name  
+   0               0               0        0        0      0     (null)
+
+.section .debug_frame
+decodeDebugFrame, frameBuf 0xb0c37700, total_length 0
+

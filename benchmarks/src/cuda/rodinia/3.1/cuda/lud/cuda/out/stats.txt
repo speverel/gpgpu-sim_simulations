@@ -1,0 +1,116 @@
+kernel_name = _Z12lud_diagonalPfii 
+kernel_launch_uid = 1 
+
+gpu_sim_cycle = 26939
+gpu_sim_insn = 19897
+gpu_ipc =       0.7386
+gpu_tot_sim_cycle = 26939
+gpu_tot_sim_insn = 19897
+gpu_tot_ipc =       0.7386
+
+tot_w_icount = 2950
+valhalla_w_icount = 1161
+w_spec_correct = 866
+tot_t_icount= 19897
+
+valhalla_t_icount = 7937
+t_spec_correct = 6513
+slice_computations= 37108
+
+ialu_t = 9579
+fpdiv_t = 120
+fpmul_t = 1240
+fp_t = 1240
+imul24_t = 0
+imul_t = 0
+imul32_t = 304
+idiv_t = 0
+trans_t = 0
+
+ialu_w = 1331
+fpdiv_w = 15
+fpmul_w = 225
+fp_w = 225
+imul24_w = 0
+imul_w = 0
+imul32_w = 19
+idiv_w = 0
+trans_w = 0
+load_w_icount = 532
+store_w_icount = 271
+
+valhallafp_w_icount = 225
+w_fpspec_correct = 32
+valhallafp_t_icount = 1240
+t_fpspec_correct = 671
+slice_computationsfp= 4593
+
+Total IALU Acesses=644275
+Total FP Acesses=4160
+Total IMUL Acesses=0
+Total IMUL24 Acesses=0
+Total FPMUL Acesses=7320
+Total FPDIV Acesses=17856
+Total IMUL32 Acesses=2128
+Total IDIV Acesses=0
+Total TRANS Acesses=0
+
+
+kernel_name = _Z12lud_diagonalPfii 
+kernel_launch_uid = 1 
+
+gpu_sim_cycle = 28967
+gpu_sim_insn = 19897
+gpu_ipc =       0.6869
+gpu_tot_sim_cycle = 28967
+gpu_tot_sim_insn = 19897
+gpu_tot_ipc =       0.6869
+
+tot_w_icount = 2950
+valhalla_w_icount = 1161
+w_spec_correct = 860
+tot_t_icount= 19897
+
+valhalla_t_icount = 7937
+t_spec_correct = 6516
+slice_computations= 37099
+
+ialu_t = 9579
+fpdiv_t = 120
+fpmul_t = 1240
+fp_t = 1240
+imul24_t = 0
+imul_t = 0
+imul32_t = 304
+idiv_t = 0
+trans_t = 0
+
+ialu_w = 1331
+fpdiv_w = 15
+fpmul_w = 225
+fp_w = 225
+imul24_w = 0
+imul_w = 0
+imul32_w = 19
+idiv_w = 0
+trans_w = 0
+load_w_icount = 532
+store_w_icount = 271
+
+valhallafp_w_icount = 225
+w_fpspec_correct = 27
+valhallafp_t_icount = 1240
+t_fpspec_correct = 729
+slice_computationsfp= 4526
+
+Total IALU Acesses=644275
+Total FP Acesses=4160
+Total IMUL Acesses=0
+Total IMUL24 Acesses=0
+Total FPMUL Acesses=7320
+Total FPDIV Acesses=17856
+Total IMUL32 Acesses=2128
+Total IDIV Acesses=0
+Total TRANS Acesses=0
+
+

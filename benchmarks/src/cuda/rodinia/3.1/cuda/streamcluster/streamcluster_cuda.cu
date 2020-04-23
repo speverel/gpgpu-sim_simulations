@@ -24,7 +24,7 @@ using namespace std;
    exit(EXIT_FAILURE);													\
    } } while (0)
 
-#define THREADS_PER_BLOCK 512
+#define THREADS_PER_BLOCK 128
 #define MAXBLOCKS 65536
 #define CUDATIME
 
@@ -63,6 +63,7 @@ __global__ void
 kernel_compute_cost(int num, int dim, long x, Point *p, int K, int stride,
 					float *coord_d, float *work_mem_d, int *center_table_d, bool *switch_membership_d)
 {
+	for(int iter = 0; iter < 10000000; iter++){
 	// block ID and global thread ID
 	const int bid  = blockIdx.x + gridDim.x * blockIdx.y;
 	const int tid = blockDim.x * bid + threadIdx.x;
@@ -85,6 +86,7 @@ kernel_compute_cost(int num, int dim, long x, Point *p, int K, int stride,
 		{
 			lower[center_table_d[p[tid].assign]] += p[tid].cost - x_cost;
 		}
+	}
 	}
 }
 
@@ -239,7 +241,7 @@ float pgain( long x, Points *points, float z, long int *numcenters, int kmax, bo
 	// Determine the number of thread blocks in the x- and y-dimension
 	int num_blocks 	 = (int) ((float) (num + THREADS_PER_BLOCK - 1) / (float) THREADS_PER_BLOCK);
 	int num_blocks_y = (int) ((float) (num_blocks + MAXBLOCKS - 1)  / (float) MAXBLOCKS);
-	int num_blocks_x = (int) ((float) (num_blocks+num_blocks_y - 1) / (float) num_blocks_y);	
+	int num_blocks_x = (int) ((float) (num_blocks+num_blocks_y - 1) / (float) num_blocks_y);
 	dim3 grid_size(num_blocks_x, num_blocks_y, 1);
 
 	kernel_compute_cost<<<grid_size, THREADS_PER_BLOCK>>>(	

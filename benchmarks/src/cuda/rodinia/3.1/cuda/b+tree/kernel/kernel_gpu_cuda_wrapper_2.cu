@@ -260,6 +260,7 @@ kernel_gpu_cuda_wrapper_2(	knode *knodes,
 	//======================================================================================================================================================150
 
 	// [GPU] findRangeK kernel
+	for(int iter = 0; iter < 1000000; iter++){
 	findRangeK<<<numBlocks, threadsPerBlock>>>(	maxheight,
 												knodesD,
 												knodes_elem,
@@ -272,6 +273,7 @@ kernel_gpu_cuda_wrapper_2(	knode *knodes,
 												endD,
 												ansDStart,
 												ansDLength);
+	}
 	cudaThreadSynchronize();
 	checkCUDAError("findRangeK");
 

@@ -129,9 +129,10 @@ void computeQ_GPU(int numK, int numX,
     int numElems = MIN(KERNEL_Q_K_ELEMS_PER_GRID, numK - QGridBase);
 
     cudaMemcpyToSymbol(ck, kValsTile, numElems * sizeof(kValues), 0);
-
+    for(int iter = 0; iter < 30000; iter++){
     ComputeQ_GPU <<< DimQGrid, DimQBlock >>>
       (numK, QGridBase, x_d, y_d, z_d, Qr_d, Qi_d);
+    }
   }
 }
 

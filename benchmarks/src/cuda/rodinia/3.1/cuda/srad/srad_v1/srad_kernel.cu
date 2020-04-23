@@ -16,6 +16,7 @@ __global__ void srad(	fp d_lambda,
 									 fp d_q0sqr, 
 									 fp *d_c, 
 									 fp *d_I){
+	
 
 	// indexes
     int bx = blockIdx.x;													// get current horizontal block index

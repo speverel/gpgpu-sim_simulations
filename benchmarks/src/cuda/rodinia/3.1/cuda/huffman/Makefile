@@ -1,11 +1,11 @@
 NVCC=nvcc
 CC = g++
 
-CUDA_INCLUDEPATH=$(CUDA_INSTALL_PATH)/include
+CUDA_INCLUDEPATH=/home/vkz4947/cuda9/cuda-9.1/include
 
-NVCC_OPTS=-O3 -lcudart -Xcompiler -m64 -g -G $(GENCODE_SM10) $(GENCODE_SM13) $(GENCODE_ARCH) $(GENCODE_SM20) $(GENCODE_SM30) $(GENCODE_SM35) $(GENCODE_SM50) $(GENCODE_SM60) $(GENCODE_SM62)
+NVCC_OPTS=-O3 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_70,code=compute_70 -Xcompiler -m64 -g -G
 
-GCC_OPTS=-O3 -Wall -Wextra -m64
+GCC_OPTS=-O3 -Wall -Wextra -m64 -fPIC -L/home/vkz4947/cuda-9.1/lib64 -L../../common/lib/linux  -lcudart
 
 OBJ = main_test_cu.o stats_logger.o vlc_kernel_sm64huff.o scan.o pack_kernels.o cpuencode.o
 SRC = main_test_cu.cu
@@ -20,7 +20,7 @@ override TESTING = -DCACHECWLUT
 endif
 
 pavle: $(OBJ) 
-	$(NVCC) $(TESTING) $(CACHECWLUT) $(NVCC_OPTS) $(OBJ) -o $(EXE) 
+	$(CC) $(TESTING) $(CACHECWLUT) $(GCC_OPTS) $(OBJ) -o $(EXE) 
 
 vlc_kernel_sm64huff.o: vlc_kernel_sm64huff.cu 
 	$(NVCC) $(TESTING) -c vlc_kernel_sm64huff.cu $(NVCC_OPTS)

@@ -64,7 +64,7 @@ kmeansPoint(float  *features,			/* in: [npoints*nfeatures] */
 			float  *block_clusters,
 			int    *block_deltas) 
 {
-
+	
 	// block ID
 	const unsigned int block_id = gridDim.x*blockIdx.y+blockIdx.x;
 	// point/thread ID  
@@ -180,6 +180,6 @@ kmeansPoint(float  *features,			/* in: [npoints*nfeatures] */
 		block_clusters[(blockIdx.y*gridDim.x + blockIdx.x) * nclusters * nfeatures + threadIdx.x] = accumulator;
 	}
 #endif
-
+	
 }
 #endif // #ifndef _KMEANS_CUDA_KERNEL_H_

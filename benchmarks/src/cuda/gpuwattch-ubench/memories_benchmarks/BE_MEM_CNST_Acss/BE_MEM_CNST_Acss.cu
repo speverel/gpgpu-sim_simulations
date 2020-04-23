@@ -1,7 +1,7 @@
 // Includes
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <string>  
 
 // includes CUDA
 #include <cuda_runtime.h>
@@ -51,7 +51,7 @@ inline void __getLastCudaError(const char *errorMessage, const char *file, const
 
 
 // Device code
-__global__ void PowerKernal(unsigned* Value, unsigned* const1, int iterations)
+__global__ void PowerKernal(unsigned* Value, unsigned* const1, unsigned long long iterations)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -62,7 +62,7 @@ __global__ void PowerKernal(unsigned* Value, unsigned* const1, int iterations)
   
   #pragma unroll 100
 
-    for(int k=0; k<iterations;k++) {
+    for(unsigned long long k=0; k<iterations;k++) {
       //load_value+=ConstArray1[i];
       __asm volatile(
         "ld.const.u32 %0, [%1];" 
@@ -85,16 +85,17 @@ __global__ void PowerKernal(unsigned* Value, unsigned* const1, int iterations)
 int main(int argc, char** argv) 
 {
 
- int iterations;
+ unsigned long long iterations;
+ char *ptr;
  if (argc != 2){
   fprintf(stderr,"usage: %s #iterations\n",argv[0]);
   exit(1);
  }
  else{
-  iterations = atoi(argv[1]);
+  iterations = strtoull(argv[1], &ptr, 10);
  }
 
- printf("Power Microbenchmark with %d iterations\n",iterations);
+ printf("Power Microbenchmark with %llu iterations\n",iterations);
  int N = THREADS_PER_BLOCK*NUM_OF_BLOCKS;
  unsigned array1[N];
  h_Value = (unsigned *) malloc(sizeof(unsigned));

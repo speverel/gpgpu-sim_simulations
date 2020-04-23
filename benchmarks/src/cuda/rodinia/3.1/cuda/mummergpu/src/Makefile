@@ -8,7 +8,7 @@ include ../experiments/test_rule.mk
 CUDA_INSTALL_PATH := $(CUDA_DIR)
 
 # Compilers
-NVCC       := $(CUDA_INSTALL_PATH)/bin/nvcc  $(GENCODE_SM10) $(GENCODE_SM13) $(GENCODE_ARCH) $(GENCODE_SM20) $(GENCODE_SM30) $(GENCODE_SM35) $(GENCODE_SM50) $(GENCODE_SM60) $(GENCODE_SM62)
+NVCC       := $(CUDA_INSTALL_PATH)/bin/nvcc 
 CXX        := g++ -fopenmp $(PROFILE)
 CC         := gcc 
 LINK       := g++ -fopenmp -m64 -fPIC $(PROFILE)
@@ -38,7 +38,7 @@ BINNAME    ?= mummergpu
 INCLUDES  += -I. -I$(CUDA_INSTALL_PATH)/include 
 
 # Libs
-LIB       := -L$(CUDA_LIB_DIR) -L$(LIBDIR) -lcudart -lGL -lGLU ${LIB}
+LIB       := -L$(CUDA_LIB_DIR) -L$(LIBDIR) -lcuda -lcudart -lGL -lGLU ${LIB}
 
 # Warning flags
 CXXWARN_FLAGS := \
@@ -64,9 +64,9 @@ CWARN_FLAGS := $(CXXWARN_FLAGS) \
 	-Wmain \
 
 # Compiler-specific flags
-NVCCFLAGS := -Xcompiler "-m64"
-CXXFLAGS  := -m64 $(CXXWARN_FLAGS)
-CFLAGS    := -m64 $(CWARN_FLAGS)
+NVCCFLAGS := -Xcompiler "-m64" -gencode arch=compute_70,code=sm_70 -gencode arch=compute_70,code=compute_70
+CXXFLAGS  := -m64 $(CXXWARN_FLAGS)  -fPIC
+CFLAGS    := -m64 $(CWARN_FLAGS)  -fPIC
 
 # Common flags
 COMMONFLAGS ?= 

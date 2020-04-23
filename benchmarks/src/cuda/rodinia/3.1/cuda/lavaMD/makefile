@@ -16,9 +16,9 @@ C_C = gcc
 OMP_LIB = -lgomp
 OMP_FLAG = -fopenmp
 
-CUD_C = $(CUDA_DIR)/bin/nvcc $(GENCODE_SM10) $(GENCODE_SM13) $(GENCODE_ARCH) $(GENCODE_SM20) $(GENCODE_SM30) $(GENCODE_SM35) $(GENCODE_SM50) $(GENCODE_SM60) $(GENCODE_SM62)
+CUD_C = /home/vkz4947/cuda-9.1/bin/nvcc
 # OMP_FLAG = 	-Xcompiler paste_one_here
-#CUDA_FLAG = -arch sm_13
+CUDA_FLAG = -arch sm_13
 
 # link objects (binaries) together
 a.out:		main.o \
@@ -32,10 +32,10 @@ a.out:		main.o \
 			./util/timer/timer.o \
 			./util/device/device.o \
 			-lm \
-			-L$(CUDA_LIB_DIR) \
-			-lcudart \
+			-L/home/vkz4947/cuda-9.1/lib64 \
+      -L/usr/lib64 -lstdc++ \
+			-lcuda -lcudart \
 			$(OMP_LIB) \
-			-lstdc++ \
 			-o lavaMD
 
 # compile function files into objects (binaries)
@@ -85,7 +85,7 @@ main.o:		main.h \
 
 # delete all object and executable files
 clean:
-	rm	-f *.o \
+	rm	*.o \
 		./kernel/*.o \
 		./util/num/*.o \
 		./util/timer/*.o \

@@ -34,7 +34,7 @@
 #include "components.h"
 #include "common.h"
 
-#define THREADS 256
+#define THREADS 1024
 
 /* Store 3 RGB float components */
 __device__ void storeComponents(float *d_r, float *d_g, float *d_b, float r, float g, float b, int pos)

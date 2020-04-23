@@ -17,6 +17,8 @@
 // This function takes an HSV value and converts it to BMP.
 // We use this function to generate colored images with
 // Smooth spectrum traversal for the input and output images.
+
+
 RGB HSVtoRGB( float h, float s, float v )
 {
     int i;
@@ -65,6 +67,21 @@ RGB HSVtoRGB( float h, float s, float v )
     return value;
 }
 
+
+RGB HSVtoRGB_temp( float h, float s, float v )
+{
+    RGB value={0,0,0};
+    FILE *fp;
+    fp = fopen("histo.csv", "a");
+    // fprintf(fp, "input1,output1,output2,output3\n");
+    value = HSVtoRGB(0.0,1.0,v);
+    fprintf(fp, "%f\n" , v);
+    //fprintf(fp, "%d,%d,%d\n", value.B,value.G,value.R);
+    fclose(fp);
+    return value;
+}
+
+
 void dump_histo_img(unsigned char* histo, unsigned int height, unsigned int width, const char *filename)
 {
     RGB* pixel_map = (RGB*) malloc (height*width*sizeof(RGB));
@@ -81,7 +98,7 @@ void dump_histo_img(unsigned char* histo, unsigned int height, unsigned int widt
                 pixel_map[y*width+x].G = 0;
                 pixel_map[y*width+x].B = 0;
             } else {
-                pixel_map[y*width+x] = HSVtoRGB(0.0,1.0,cbrt(1+ 63.0*((float)value)/((float)UINT8_MAX))/4);
+                pixel_map[y*width+x] = HSVtoRGB_temp(0.0,1.0,cbrt(1+ 63.0*((float)value)/((float)UINT8_MAX))/4);
             }
         }
     }

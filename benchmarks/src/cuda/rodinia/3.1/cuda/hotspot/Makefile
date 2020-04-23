@@ -1,24 +1,25 @@
 include ../../common/make.config
 
-CC := $(CUDA_DIR)/bin/nvcc
+CC = g++
+CC_FLAGS = -g -fopenmp -O2 
+
+NVCC = /home/vkz4947/cuda-9.1/bin/nvcc
+NVCC_FLAGS = -I/home/vkz4947/cuda-9.1/include 
 
 INCLUDE := $(CUDA_DIR)/include
 
 SRC = hotspot.cu
 
 EXE = hotspot
+hotspot: hotspot.o
+	g++ -fPIC  -m64 -o hotspot hotspot.o  -L/home/vkz4947/cuda-9.1/lib64   -lcudart
+hotspot.o: hotspot.cu 
+	$(NVCC) -gencode=arch=compute_70,code=\"sm_70,compute_70\"  $(NVCC_FLAGS) -c hotspot.cu
+ 
 
-release: $(SRC)
-	$(CC) $(KERNEL_DIM) $(SRC) -o $(EXE) -I$(INCLUDE) -L$(CUDA_LIB_DIR) 
 
-enum: $(SRC)
-	$(CC) $(KERNEL_DIM) -deviceemu $(SRC) -o $(EXE) -I$(INCLUDE) -L$(CUDA_LIB_DIR) 
 
-debug: $(SRC)
-	$(CC) $(KERNEL_DIM) -g $(SRC) -o $(EXE) -I$(INCLUDE) -L$(CUDA_LIB_DIR) 
 
-debugenum: $(SRC)
-	$(CC) $(KERNEL_DIM) -g -deviceemu $(SRC) -o $(EXE) -I$(INCLUDE) -L$(CUDA_LIB_DIR) 
 
 clean: $(SRC)
-	rm -f $(EXE) $(EXE).linkinfo result.txt
+	rm -f $(EXE) $(EXE).o $(EXE).linkinfo result.txt

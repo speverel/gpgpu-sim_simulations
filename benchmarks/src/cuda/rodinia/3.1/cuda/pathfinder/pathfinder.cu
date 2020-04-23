@@ -8,7 +8,7 @@
 #define DEVICE 0
 #define HALO 1 // halo width along one direction when advancing to the next iteration
 
-#define BENCH_PRINT
+//#define BENCH_PRINT
 
 void run(int argc, char** argv);
 
@@ -19,44 +19,73 @@ int* result;
 #define M_SEED 9
 int pyramid_height;
 
-//#define BENCH_PRINT
+//#define BENCH_PRINT
+
 
 void
 init(int argc, char** argv)
 {
-	if(argc==4){
-		cols = atoi(argv[1]);
-		rows = atoi(argv[2]);
+	if(argc==4){
+
+		cols = atoi(argv[1]);
+
+		rows = atoi(argv[2]);
+
                 pyramid_height=atoi(argv[3]);
 	}else{
                 printf("Usage: dynproc row_len col_len pyramid_height\n");
                 exit(0);
         }
-	data = new int[rows*cols];
-	wall = new int*[rows];
-	for(int n=0; n<rows; n++)
-		wall[n]=data+cols*n;
-	result = new int[cols];
-	
-	int seed = M_SEED;
-	srand(seed);
-
-	for (int i = 0; i < rows; i++)
-    {
-        for (int j = 0; j < cols; j++)
-        {
-            wall[i][j] = rand() % 10;
-        }
-    }
-#ifdef BENCH_PRINT
-    for (int i = 0; i < rows; i++)
-    {
-        for (int j = 0; j < cols; j++)
-        {
-            printf("%d ",wall[i][j]) ;
-        }
-        printf("\n") ;
-    }
+	data = new int[rows*cols];
+
+	wall = new int*[rows];
+
+	for(int n=0; n<rows; n++)
+
+		wall[n]=data+cols*n;
+
+	result = new int[cols];
+
+	
+
+	int seed = M_SEED;
+
+	srand(seed);
+
+
+
+	for (int i = 0; i < rows; i++)
+
+    {
+
+        for (int j = 0; j < cols; j++)
+
+        {
+
+            wall[i][j] = rand() % 10;
+
+        }
+
+    }
+
+#ifdef BENCH_PRINT
+
+    for (int i = 0; i < rows; i++)
+
+    {
+
+        for (int j = 0; j < cols; j++)
+
+        {
+
+            printf("%d ",wall[i][j]) ;
+
+        }
+
+        printf("\n") ;
+
+    }
+
 #endif
 }
 
@@ -81,12 +110,13 @@ __global__ void dynproc_kernel(
                 int startStep,
                 int border)
 {
-
+    
         __shared__ int prev[BLOCK_SIZE];
         __shared__ int result[BLOCK_SIZE];
 
 	int bx = blockIdx.x;
 	int tx=threadIdx.x;
+
 	
         // each block finally computes result for a small block
         // after N iterations. 
@@ -103,7 +133,7 @@ __global__ void dynproc_kernel(
 
         // calculate the global thread coordination
 	int xidx = blkX+tx;
-       
+
         // effective range within this block that falls within 
         // the valid range of the input data
         // used to rule out computation outside the boundary.
@@ -123,27 +153,54 @@ __global__ void dynproc_kernel(
 	}
 	__syncthreads(); // [Ronny] Added sync to avoid race on prev Aug. 14 2012
         bool computed;
-        for (int i=0; i<iteration ; i++){ 
-            computed = false;
-            if( IN_RANGE(tx, i+1, BLOCK_SIZE-i-2) &&  \
-                  isValid){
-                  computed = true;
-                  int left = prev[W];
-                  int up = prev[tx];
-                  int right = prev[E];
-                  int shortest = MIN(left, up);
-                  shortest = MIN(shortest, right);
-                  int index = cols*(startStep+i)+xidx;
-                  result[tx] = shortest + gpuWall[index];
-	
+       
+        if((xidx == 90000) ){
+            printf("\n\n\n\n");
+             printf("Gtid : %d\n", blockIdx.x *blockDim.x + threadIdx.x);
+
+            printf("tx>(i+1), (BLOCK_SIZE-2-i), tx<(BLOCK_SIZE-2-i), MIN(left up), MIN(shortest right), index, result[tx]\n");       
+        }
+
+        int upperbound = BLOCK_SIZE-2;
+
+
+  
+
+
+    for (int i=0; i<iteration ; i++){
+
+
+        // //Printing variables:
+        // if((xidx == 90000) ){
+
+        //     printf("tx : %d\n", tx);
+        //     printf("tx-i+1 : %d\n", tx - i+1);
+        //     printf("tx-BLOCK_SIZE-i-2 : %d\n", tx - BLOCK_SIZE-i-2);    
+        // }
+
+        computed = false;
+        if( (tx>=(i+1) && tx<=(upperbound-i)) && isValid){
+          computed = true;
+          int left = prev[W];
+          int up = prev[tx];
+          int right = prev[E];
+          int shortest = MIN(left, up);
+          shortest = MIN(shortest, right);
+          int index = cols*(startStep+i)+xidx;
+          result[tx] = shortest + gpuWall[index];
+
+                //Printing variables:
+            if((xidx == 90000)){ 
+                printf("%d, %d, %d, %d, %d, %d, %d\n", tx - i+1, BLOCK_SIZE-2-i,  tx - BLOCK_SIZE-i-2, left - up, shortest - right, cols*(startStep+i)+xidx, shortest + gpuWall[index]); 
             }
-            __syncthreads();
-            if(i==iteration-1)
-                break;
-            if(computed)	 //Assign the computation range
-                prev[tx]= result[tx];
-	    __syncthreads(); // [Ronny] Added sync to avoid race on prev Aug. 14 2012
-      }
+        }
+        __syncthreads();
+        if(i==iteration-1)
+             break;
+        if(computed)	 //Assign the computation range
+            prev[tx]= result[tx];
+    	__syncthreads(); // [Ronny] Added sync to avoid race on prev Aug. 14 2012
+    }
 
       // update the global memory
       // after the last iteration, only threads coordinated within the 
@@ -151,6 +208,7 @@ __global__ void dynproc_kernel(
       if (computed){
           gpuResults[xidx]=result[tx];		
       }
+    
 }
 
 /*
@@ -159,19 +217,24 @@ __global__ void dynproc_kernel(
 int calc_path(int *gpuWall, int *gpuResult[2], int rows, int cols, \
 	 int pyramid_height, int blockCols, int borderCols)
 {
+        printf("blockCols : %d \n ",blockCols );
         dim3 dimBlock(BLOCK_SIZE);
         dim3 dimGrid(blockCols);  
 	
         int src = 1, dst = 0;
-	for (int t = 0; t < rows-1; t+=pyramid_height) {
+        unsigned long long count = 0;
+        for (int t = 0; t < rows-1; t+=pyramid_height) {
             int temp = src;
             src = dst;
             dst = temp;
+            count++;
             dynproc_kernel<<<dimGrid, dimBlock>>>(
                 MIN(pyramid_height, rows-t-1), 
                 gpuWall, gpuResult[src], gpuResult[dst],
                 cols,rows, t, borderCols);
-	}
+
+    }
+    printf("Kernel Launches: %lld\n", count);
         return dst;
 }
 
@@ -214,13 +277,20 @@ void run(int argc, char** argv)
     cudaMemcpy(result, gpuResult[final_ret], sizeof(int)*cols, cudaMemcpyDeviceToHost);
 
 
-#ifdef BENCH_PRINT
-    for (int i = 0; i < cols; i++)
-            printf("%d ",data[i]) ;
-    printf("\n") ;
-    for (int i = 0; i < cols; i++)
-            printf("%d ",result[i]) ;
-    printf("\n") ;
+#ifdef BENCH_PRINT
+
+    for (int i = 0; i < cols; i++)
+
+            printf("%d ",data[i]) ;
+
+    printf("\n") ;
+
+    for (int i = 0; i < cols; i++)
+
+            printf("%d ",result[i]) ;
+
+    printf("\n") ;
+
 #endif
 
 

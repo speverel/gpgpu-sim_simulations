@@ -168,7 +168,7 @@ int work_2(	int xmax,
 
 	for(i=0; i<workload; i++){
 		pointer = i*((xmax+1)*EQUATIONS) + 0*(EQUATIONS);
-		read("../../data/myocyte/y.txt",
+		read("/home/vkz4947/gpgpu-sim_simulations/benchmarks/src/cuda/rodinia/3.1/data/myocyte/y.txt",
 					&y[pointer],
 					91,
 					1,
@@ -182,7 +182,7 @@ int work_2(	int xmax,
 
 	for(i=0; i<workload; i++){
 		pointer = i*PARAMETERS;
-		read("../../data/myocyte/params.txt",
+		read("/home/vkz4947/gpgpu-sim_simulations/benchmarks/src/cuda/rodinia/3.1/data/myocyte/params.txt",
 					&params[pointer],
 					18,
 					1,
@@ -212,7 +212,8 @@ int work_2(	int xmax,
 		blocks.x = blocks_x;																	// define the number of blocks in the grid
 		blocks.y = 1;
 	}
-
+	
+	for(int iter = 0 ; iter < 1000000; iter++){
 	solver_2<<<blocks, threads>>>(	workload,
 																xmax,
 
@@ -229,7 +230,7 @@ int work_2(	int xmax,
 
 	// cudaThreadSynchronize();
 	// printf("CUDA error: %s\n", cudaGetErrorString(cudaGetLastError()));
-
+	}
 	time4 = get_time();
 
 	//================================================================================80

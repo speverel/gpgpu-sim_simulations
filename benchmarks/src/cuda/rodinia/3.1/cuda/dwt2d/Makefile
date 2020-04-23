@@ -1,6 +1,6 @@
 #Configure
 #CUDA_INSTALL_PATH ?= /usr/local/cuda
-#CUDA_INSTALL_PATH = $(CUDA_DIR)
+CUDA_INSTALL_PATH = $(CUDA_DIR)
 EXECUTABLE := dwt2d
 
 # Debug options
@@ -9,7 +9,7 @@ cudagdb=0 #compile for use with cuda-gdb, note that 'dbg' must be 1 as well
 performancetest=1
 
 # NVCC Options
-#NVCCFLAGS += -arch sm_20
+NVCCFLAGS += -gencode arch=compute_70,code=sm_70 -gencode arch=compute_70,code=compute_70
 
 # Files
 CFILES := 
@@ -24,7 +24,7 @@ include ../../common/make.config
 
 # Common flags
 COMMONFLAGS += $(INCLUDES) 
-NVCCFLAGS += $(COMMONFLAGS) $(GENCODE_SM10) $(GENCODE_SM13) $(GENCODE_ARCH) $(GENCODE_SM20) $(GENCODE_SM30) $(GENCODE_SM35) $(GENCODE_SM50) $(GENCODE_SM60) $(GENCODE_SM62)
+NVCCFLAGS += $(COMMONFLAGS)
 CXXFLAGS += $(COMMONFLAGS)
 CFLAGS += $(COMMONFLAGS) -std=c99 
 LDFLAGS += -L$(CUDA_INSTALL_PATH)/lib64 -lcudart
@@ -99,7 +99,7 @@ CUOBJS=$(CUFILES:.cu=.cu.o)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 %.cu.o: %.cu
-	$(NVCC) $(OUTPUT) $(NVCCFLAGS) $(GENCODE_SM10) $(GENCODE_SM13) $(GENCODE_ARCH) $(GENCODE_SM20) $(GENCODE_SM30) $(GENCODE_SM35) $(GENCODE_SM50) $(GENCODE_SM60) $(GENCODE_SM62) -c $< -o $@
+	$(NVCC) $(OUTPUT) $(NVCCFLAGS) -c $< -o $@
 
 %.cpp.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
@@ -109,4 +109,4 @@ $(EXECUTABLE): $(COBJS) $(CXXOBJS) $(CUOBJS)
 
 clean:
 	rm -f $(COBJS) $(CXXOBJS) $(CUOBJS) $(EXECUTABLE)
-	rm -f *.bmp.dwt.*		
+	rm *.bmp.dwt.*		

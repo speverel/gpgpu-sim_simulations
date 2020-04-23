@@ -165,7 +165,7 @@ int main(int argc, char *argv []){
 
 	image_ori = (fp*)malloc(sizeof(fp) * image_ori_elem);
 
-	read_graphics(	"../../../data/srad/image.pgm",
+	read_graphics(	"/home/vkz4947/gpgpu-sim_simulations/benchmarks/src/cuda/rodinia/3.1/data/srad/image.pgm",
 								image_ori,
 								image_ori_rows,
 								image_ori_cols,
@@ -369,6 +369,7 @@ int main(int argc, char *argv []){
 		q0sqr = varROI / meanROI2;											// gets standard deviation of ROI
 
 		// execute srad kernel
+		for(int iteration = 0; iteration < 100000; iteration++){
 		srad<<<blocks, threads>>>(	lambda,									// SRAD coefficient 
 									Nr,										// # of rows in input image
 									Nc,										// # of columns in input image
@@ -384,7 +385,7 @@ int main(int argc, char *argv []){
 									q0sqr,									// standard deviation of ROI 
 									d_c,									// diffusion coefficient
 									d_I);									// output image
-
+		}
 		checkCUDAError("srad");
 
 		// execute srad2 kernel

@@ -3,7 +3,6 @@
 SRCDIR_OBJS=main.o 
 LANGUAGE=cuda
 APP_LDFLAGS=-lm -lstdc++
-GENCODE_SM10=
 
 # To use slow (but precise) math routines
 ifeq ($(slowmath), 1)
@@ -11,7 +10,7 @@ ifeq ($(slowmath), 1)
 else
 	APP_CFLAGS += -ffast-math
 	APP_CXXFLAGS += -ffast-math
-	APP_CUDACFLAGS += -Xptxas -dlcm=cg  --use_fast_math
+	APP_CUDACFLAGS += -Xptxas -dlcm=cg --use_fast_math
 endif
 
 # To use the MKL library

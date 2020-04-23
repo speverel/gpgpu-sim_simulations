@@ -329,6 +329,7 @@ main(int argc, char **argv)
     pb_SwitchToTimer(&timers, pb_TimerID_KERNEL);
 
     /* Run the 4x4 kernel */
+    for(int iter = 0; iter < 100000; iter++){
     mb_sad_calc<<<dim3(CEIL(ref_image->width / 4, THREADS_W),
 		       CEIL(ref_image->height / 4, THREADS_H)),
       dim3(CEIL(MAX_POS, POS_PER_THREAD) * THREADS_W * THREADS_H),
@@ -337,7 +338,9 @@ main(int argc, char **argv)
        (unsigned short *)d_cur_image,
        image_width_macroblocks,
        image_height_macroblocks);
+     }
     CUDA_ERRCK
+    
 
     /* Run the larger-blocks kernels */
     larger_sad_calc_8<<<macroblock_grid, dim3(32, 4)>>>

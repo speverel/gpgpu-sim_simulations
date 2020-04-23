@@ -195,6 +195,7 @@ kmeansCuda(float  **feature,				/* in: [npoints][nfeatures] */
     dim3  threads( num_threads_perdim*num_threads_perdim );
     
 	/* execute the kernel */
+	for(int iter = 0; iter < 100000; iter++){
     kmeansPoint<<< grid, threads >>>( feature_d,
                                       nfeatures,
                                       npoints,
@@ -203,8 +204,9 @@ kmeansCuda(float  **feature,				/* in: [npoints][nfeatures] */
                                       clusters_d,
 									  block_clusters_d,
 									  block_deltas_d);
-
+	}
 	cudaThreadSynchronize();
+	
 
 	/* copy back membership (device to host) */
 	cudaMemcpy(membership_new, membership_d, npoints*sizeof(int), cudaMemcpyDeviceToHost);	

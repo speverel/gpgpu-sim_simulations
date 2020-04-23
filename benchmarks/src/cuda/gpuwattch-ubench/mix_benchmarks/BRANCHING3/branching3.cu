@@ -162,7 +162,7 @@ int main(int argc, char** argv)
     }
 
     printf("Power Microbenchmark with %d iterations\n",iterations);
-	 int N = THREADS_PER_BLOCK*NUM_OF_BLOCKS*2;
+	 int N = THREADS_PER_BLOCK*NUM_OF_BLOCKS*4;
 	 
 	 // Allocate input vectors h_A and h_B in host memory
  	 size_t size1 = N * sizeof(float);

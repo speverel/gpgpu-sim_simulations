@@ -1,7 +1,7 @@
 include ../../common/make.config
 
 LOCAL_CC = gcc -g -O3 -Wall
-CC := $(CUDA_DIR)/bin/nvcc $(GENCODE_SM10) $(GENCODE_SM13) $(GENCODE_ARCH) $(GENCODE_SM20) $(GENCODE_SM30) $(GENCODE_SM35) $(GENCODE_SM50) $(GENCODE_SM60) $(GENCODE_SM62)
+CC := $(CUDA_DIR)/bin/nvcc
 
 all : nn hurricane_gen
 
@@ -9,8 +9,9 @@ clean :
 	rm -rf *.o nn hurricane_gen
 
 nn : nn_cuda.cu
-	$(CC) -cuda nn_cuda.cu -lcudart  -D__DEVICE_EMULATION__
-	$(CC) -o nn nn_cuda.cu -lcudart  -D__DEVICE_EMULATION__
+	/home/vkz4947/cuda-9.1/bin/nvcc -ccbin g++ -I/home/vkz4947/NVIDIA_CUDA-9.1_Samples/common/inc -m64 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_70,code=compute_70 -o nn_cuda.o -c nn_cuda.cu
+	g++ -fPIC -m64 -o nn   nn_cuda.o -L/home/vkz4947/cuda-9.1/lib64 -L/home/vkz4947/NVIDIA_CUDA-9.1_Samples/common/lib/linux  -lcudart
+
 
 hurricane_gen : hurricane_gen.c
 	$(LOCAL_CC) -o $@ $< -lm

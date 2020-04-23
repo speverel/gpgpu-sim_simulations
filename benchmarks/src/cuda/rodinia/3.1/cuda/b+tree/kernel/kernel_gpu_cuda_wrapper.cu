@@ -211,7 +211,7 @@ kernel_gpu_cuda_wrapper(record *records,
 	//======================================================================================================================================================150
 	// findK kernel
 	//======================================================================================================================================================150
-
+	
 	findK<<<numBlocks, threadsPerBlock>>>(	maxheight,
 
 											knodesD,
@@ -223,7 +223,9 @@ kernel_gpu_cuda_wrapper(record *records,
 											offsetD,
 											keysD,
 											ansD);
+	
 	cudaThreadSynchronize();
+	
 	checkCUDAError("findK");
 
 	time4 = get_time();

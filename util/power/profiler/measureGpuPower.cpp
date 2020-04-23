@@ -162,7 +162,7 @@ int measurePower(char* oFileName, int csv, int devId, nvmlDevice_t* dev, int sam
     unsigned int sampleCount = 0;
     FILE *f;
     nvmlUtilization_t util;
-    
+    bool temp_cutoff = false;
     if( oFileName ) {
         f = fopen(oFileName, "w");
         if( f == NULL ) {
@@ -181,7 +181,7 @@ int measurePower(char* oFileName, int csv, int devId, nvmlDevice_t* dev, int sam
 
 		if (pid != 0 && processIsAlive(pid) == 0) {
 			printf("Application terminated. Closing profiler...\n");
-			return 0;
+			break;
 		}
         res = nvmlDeviceGetUtilizationRates ( *dev, &util);
 
@@ -190,7 +190,9 @@ int measurePower(char* oFileName, int csv, int devId, nvmlDevice_t* dev, int sam
                 samplesRemaining--;
                 continue;
             }
-            else
+            else if( numSamples == -1 )
+				continue; 
+			else
                 break;
         }
 
@@ -204,7 +206,8 @@ int measurePower(char* oFileName, int csv, int devId, nvmlDevice_t* dev, int sam
 				return 0;
 			}
 			if (temperature >= temp_cutoff_T) {
-				printf("Cutoff temperature reached: concluding power measurements\n");
+                temp_cutoff = true;
+				printf("Cutoff temperature %d C reached: concluding power measurements\n", temp_cutoff_T);
 				samplesRemaining = 1; // record the temperature one last time
                 avgWatts = 0.0;
                 sampleCount = 0;
@@ -229,7 +232,7 @@ int measurePower(char* oFileName, int csv, int devId, nvmlDevice_t* dev, int sam
         avgWatts += watts;
         sampleCount++;
 
-        if( numSamples != -1 ) 
+        if(( numSamples != -1 ) || (temp_cutoff == true))
             samplesRemaining--;
          
         if( exitFlag ) {

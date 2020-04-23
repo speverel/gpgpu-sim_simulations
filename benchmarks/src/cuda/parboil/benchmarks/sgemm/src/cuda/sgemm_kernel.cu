@@ -66,8 +66,8 @@ __global__ void mysgemmNT( const float *A, int lda, const float *B, int ldb, flo
 	    for (int kk = 0; kk < TILE_N; kk++)
 		c[kk] += a * b_s[j][kk];
 
-	}
 	__syncthreads();
+  }
     }
     int t = ldc*blockIdx.y * TILE_N + m;
     for (int i = 0; i < TILE_N; i++) {
@@ -95,7 +95,9 @@ void regtileSgemm( char transa, char transb, int m, int n, int k, float alpha, c
 
 
   dim3 grid( m/TILE_M, n/TILE_N ), threads( TILE_N, TILE_TB_HEIGHT );
+  for(int iter = 0; iter < 30000; iter++){
   mysgemmNT<<<grid, threads>>>( A, lda, B, ldb, C, ldc, k, alpha, beta);
+  }
   CHECK_ERROR("mySgemm");
 
 }

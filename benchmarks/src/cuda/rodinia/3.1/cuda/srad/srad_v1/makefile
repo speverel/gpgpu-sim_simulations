@@ -1,6 +1,6 @@
 include ../../../common/make.config
 
-CC := $(CUDA_DIR)/bin/nvcc $(GENCODE_SM10) $(GENCODE_SM13) $(GENCODE_ARCH) $(GENCODE_SM20) $(GENCODE_SM30) $(GENCODE_SM35) $(GENCODE_SM50) $(GENCODE_SM60) $(GENCODE_SM62)
+CC := $(CUDA_DIR)/bin/nvcc
 
 INCLUDE := $(CUDA_DIR)/include
 
@@ -15,10 +15,10 @@ INCLUDE := $(CUDA_DIR)/include
 
 # link objects(binaries) together
 a.out:		main.o
-	$(CC)	main.o \
+	g++	main.o \
 				-I$(INCLUDE) \
 				-L$(CUDA_LIB_DIR)  \
-				-lm -lcudart -o srad
+				-lm -fPIC -m64 -L/home/vkz4947/cuda-9.1/lib64 -L/home/vkz4947/NVIDIA_CUDA-9.1_Samples/common/lib/linux  -lcudart -o srad
 
 # compile main function file into object (binary)
 main.o: 	main.cu \
@@ -30,9 +30,9 @@ main.o: 	main.cu \
 				srad_kernel.cu \
 				srad2_kernel.cu \
 				compress_kernel.cu
-	$(CC)	main.cu \
-				-c -O3
+	nvcc	main.cu \
+				-c -O3 -ccbin g++ -gencode arch=compute_70,code=sm_70 -gencode arch=compute_70,code=compute_70
 
 # delete all object files
 clean:
-	rm -f *.o srad
+	rm *.o srad

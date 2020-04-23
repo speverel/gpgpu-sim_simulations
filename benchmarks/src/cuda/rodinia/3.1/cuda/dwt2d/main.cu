@@ -51,7 +51,18 @@ struct dwt {
 
 int getImg(char * srcFilename, unsigned char *srcImg, int inputSize)
 {
-     printf("Loading input: %s\n", srcFilename);
+    // printf("Loading ipnput: %s\n", srcFilename);
+    char *path = "/home/vkz4947/gpgpu-sim_simulations/benchmarks/src/cuda/rodinia/3.1/data/dwt2d/";
+    char *newSrc = NULL;
+    
+    if((newSrc = (char *)malloc(strlen(srcFilename)+strlen(path)+1)) != NULL)
+    {
+        newSrc[0] = '\0';
+        strcat(newSrc, path);
+        strcat(newSrc, srcFilename);
+        srcFilename= newSrc;
+    }
+    printf("Loading ipnput: %s\n", srcFilename);
 
     //srcFilename = strcat("../../data/dwt2d/",srcFilename);
     //read image
