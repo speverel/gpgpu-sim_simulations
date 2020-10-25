@@ -9,6 +9,8 @@ hysoonkim: common
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) OPT=$(OPT) -C hysoonkim/memaddtwo/$(OPT)  
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) OPT=$(OPT) -C hysoonkim/microbenchmark_coherent/$(OPT)  
 
+tensor_benchmarks: common
+	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C tensor_benchmarks/TENSOR/$(OPT)
 
 branching_benchmarks: common
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C branching_benchmarks/BE_SP_INT_ADD_l1/$(OPT)
@@ -302,6 +304,8 @@ cleandram: common
 cleanactive_cores: common
 	$(SETENV) make $(MAKE_ARGS) clean -C active_cores/ACT_CORE/$(OPT)   
 
+cleantensor: common
+	$(SETENV) make $(MAKE_ARGS) clean -C tensor_benchmarks/TENSOR/$(OPT)   
 
 cleanfunctional: common
 	$(SETENV) make $(MAKE_ARGS) clean -C functional_benchmarks/REG_FILE/$(OPT)
@@ -469,5 +473,5 @@ clean-visualizer:
 power: power_apps
 
 
-power_apps: active_cores branching_benchmarks dram_benchmarks functional_benchmarks memories_benchmarks mix_benchmarks
+power_apps: active_cores branching_benchmarks dram_benchmarks functional_benchmarks memories_benchmarks mix_benchmarks tensor_benchmarks
 cleanpower: cleanactive_cores cleanbranching cleandram cleanfunctional cleanmemories cleanmix
