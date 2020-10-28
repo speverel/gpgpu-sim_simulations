@@ -269,7 +269,8 @@ int measurePower(char* oFileName, int csv, int devId, nvmlDevice_t* dev, int sam
     }
         
 
-
+    if ((temp_cutoff_T) && (!temp_cutoff))
+        printf("WARNING: TEMPERATURE CUTTOFF NOT REACHED \n\n");
     printf("\n\n");
     return 1;
 }

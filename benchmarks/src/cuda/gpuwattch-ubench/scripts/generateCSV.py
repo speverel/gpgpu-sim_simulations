@@ -26,9 +26,12 @@ for benchmark in ubenchmarks :
 	datapoints = numpy.array(samples)
 	power_dict[benchmark] = collections.OrderedDict()
 	power_dict[benchmark]["#samples"] = datapoints.size
-	power_dict[benchmark]["mean HW_power"] = datapoints.mean()
-	power_dict[benchmark]["st_dev"] = datapoints.std()
-	power_dict[benchmark]["var"] = datapoints.var()
+	if datapoints.size == 0:
+		print 'No Data for :' + benchmark 
+	else:
+		power_dict[benchmark]["mean HW_power"] = datapoints.mean()
+		power_dict[benchmark]["st_dev"] = datapoints.std()
+		power_dict[benchmark]["var"] = datapoints.var()
 
 df = pd.DataFrame.from_dict(power_dict, orient='index')
 cwd = 'hw_power_results.csv'

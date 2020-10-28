@@ -66,16 +66,15 @@ __global__ void PowerKernal(unsigned* Value, unsigned* const1, unsigned long lon
       //load_value+=ConstArray1[i];
       __asm volatile(
         "ld.const.u32 %0, [%1];" 
-        : "=r"(load_value) : "l"(&const1[i])
-      );
-      //__asm volatile("add.u32 %0, %0, %1;" : "+r"(sum_value) : "r"(load_value));
+        : "=r"(load_value) : "l"(&const1[i]) : "memory");
+      __asm volatile("add.u32 %0, %0, %1;" : "+r"(sum_value) : "r"(load_value));
       // __asm volatile(
       //  "st.global.wb.u32 [%0], %1;"
       //  : : "l"((unsigned long)(B+i)), "r"(load_value) 
       // );
 
     }
-    *Value = load_value;
+    *Value = sum_value;
     __syncthreads();
 }
 

@@ -56,7 +56,7 @@ inline void __getLastCudaError(const char *errorMessage, const char *file, const
 }
 
 // end of CUDA Helper Functions
-__global__ void PowerKernal2(const float* A, const float* B, float* C, int N, int iterations)
+__global__ void PowerKernal2(const float* A, const float* B, float* C, int N, unsigned long long iterations)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     //Do Some Computation
@@ -89,14 +89,14 @@ __global__ void PowerKernal2(const float* A, const float* B, float* C, int N, in
 
 int main(int argc, char** argv)
 {
-  int iterations;
+  unsigned long long iterations;
   unsigned blocks;
   if (argc != 3){
 	  fprintf(stderr,"usage: %s #iterations #cores\n",argv[0]);
 	  exit(1);
   }
   else {
-    iterations = atoi(argv[1]);
+    iterations = atoll(argv[1]);
     blocks = atoi(argv[2]);
   }
 

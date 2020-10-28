@@ -82,14 +82,14 @@ __global__ void PowerKernal2( unsigned* A, unsigned* B, int N)
     		"ld.global.ca.u32 %0, [%1];" 
     		: "=r"(load_value) : "l"((unsigned long)(A+i))
     	);
-    	//__asm volatile("add.u32 %0, %0, %1;" : "+r"(sum_value) : "r"(load_value));
+    	__asm volatile("add.u32 %0, %0, %1;" : "+r"(sum_value) : "r"(load_value));
     	// __asm volatile(
     	// 	"st.global.wb.u32 [%0], %1;"
     	// 	: : "l"((unsigned long)(B+i)), "r"(load_value) 
     	// );
 
     }
-    B[i] = load_value;
+    B[i] = sum_value;
     __syncthreads();
 
 }
