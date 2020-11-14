@@ -91,7 +91,7 @@ __global__ void power_microbench(float *data1, float *data2, uint32_t *data3, ui
   if(gid < size){
     if((gid%32)<div){
     //ROI
-      #pragma unroll 1000
+      #pragma unroll 100
       for (uint64_t j=0 ; j<iterations ; ++j) {
         asm volatile ("{\t\n"
             "add.f32 %0, %1, %0;\n\t"

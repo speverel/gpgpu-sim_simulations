@@ -42,7 +42,7 @@ __global__ void mem_bw (float* A,  float* B, float* C, float* D, float* E, float
   uint32_t start = 0;
   asm volatile ("mov.u32 %0, %%clock;" : "=r"(start) :: "memory");
 
-  #pragma unroll 1000
+  #pragma unroll 100
   for(uint64_t j = 0; j<iterations; j++){
     for(int i = idx; i < ARRAY_SIZE/4; i += blockDim.x * gridDim.x) {
       float4 a1 = reinterpret_cast<float4*>(A)[i];

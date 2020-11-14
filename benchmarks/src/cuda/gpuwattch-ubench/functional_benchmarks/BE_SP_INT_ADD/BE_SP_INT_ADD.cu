@@ -76,16 +76,16 @@ __global__ void PowerKernal2(const unsigned* A, const unsigned* B, unsigned* C, 
     unsigned I1=A[i];
     unsigned I2=B[i];
 
-#pragma unroll 1000
+#pragma unroll 100
     // Excessive Addition access
     for(unsigned k=0; k<N;k++) {
 
-	Value2= I1+I2;
-	Value3=I1-I2;
-	Value1-=Value2;
-	Value3+=Value1;
-	Value2-=Value3;
-	Value1+=Value3;
+      Value1=I1+I2;
+      Value3=I1-I2;
+      Value1+=Value2;
+      Value1+=Value2;
+      Value2=Value3-Value1;
+      Value1=Value2+Value3;
 
 //	Value2= I1+I2;
 //	Value3=I1-I2;

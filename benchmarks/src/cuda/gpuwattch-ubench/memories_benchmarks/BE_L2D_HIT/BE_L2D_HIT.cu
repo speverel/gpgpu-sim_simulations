@@ -22,22 +22,25 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
         }
 }
 
+__global__ void l2_pointers_init(uint64_t *posArray){
 
-__global__ void l1_stress(uint64_t *posArray, uint64_t *dsink, uint64_t iterations){
+  uint32_t tid = blockIdx.x*blockDim.x + threadIdx.x;
+  if(tid == 0){
+    for(uint32_t blk = 0; blk <NUM_BLOCKS; blk++){
+      for (uint32_t i=0; i<(THREADS_NUM-1); i++){
+        posArray[(blk*THREADS_NUM)+i] = (uint64_t)(posArray + (blk*THREADS_NUM) + i + 1);
+      }
+
+      posArray[((blk+1)*THREADS_NUM)-1] = (uint64_t)(posArray + (blk*THREADS_NUM));
+    }
+  }
+}
+
+__global__ void l2_stress(uint64_t *posArray, uint64_t *dsink, uint64_t iterations){
 
   // thread index
   uint32_t tid = blockIdx.x*blockDim.x + threadIdx.x;
 
-  // one thread to initialize the pointer-chasing array for each block
-  //if(tid ==0){
-    for(uint32_t blk = 0; blk <NUM_BLOCKS; blk++){
-    for (uint32_t i=0; i<(THREADS_NUM-1); i++){
-      posArray[(blk*THREADS_NUM)+i] = (uint64_t)(posArray + (blk*THREADS_NUM) + i + 1);
-    }
-
-    posArray[((blk+1)*THREADS_NUM)-1] = (uint64_t)(posArray + (blk*THREADS_NUM));
-    }
-  //}
 
   if(tid < NUM_BLOCKS*THREADS_NUM){
   // a register to avoid compiler optimization
@@ -56,7 +59,7 @@ __global__ void l1_stress(uint64_t *posArray, uint64_t *dsink, uint64_t iteratio
 
   // pointer-chasing iterations times
   // use cg modifier to cache the load in L1
-  #pragma unroll 1000
+  #pragma unroll 100
   for(uint64_t i=0; i<iterations; ++i) { 
     asm volatile ("{\t\n"
       "ld.global.cg.u64 %0, [%1];\n\t"
@@ -92,8 +95,8 @@ int main(int argc, char** argv){
 
   gpuErrchk( cudaMalloc(&posArray_g, total_threads*sizeof(uint64_t)) );
   gpuErrchk( cudaMalloc(&dsink_g, total_threads*sizeof(uint64_t)) );
-  
-  l1_stress<<<NUM_BLOCKS,THREADS_NUM>>>(posArray_g, dsink_g, iterations);
+  l2_pointers_init<<<1,1>>>(posArray_g);
+  l2_stress<<<NUM_BLOCKS,THREADS_NUM>>>(posArray_g, dsink_g, iterations);
   gpuErrchk( cudaPeekAtLastError() );
 
   gpuErrchk( cudaMemcpy(dsink, dsink_g, total_threads*sizeof(uint64_t), cudaMemcpyDeviceToHost) );

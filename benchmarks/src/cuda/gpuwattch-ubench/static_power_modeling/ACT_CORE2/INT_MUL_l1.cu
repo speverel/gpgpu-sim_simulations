@@ -70,7 +70,7 @@ __global__ void PowerKernal2(const uint32_t* A, const uint32_t* B, uint32_t* C, 
     // Excessive Addition access
 //    if(((i%32)<=31))
 if((i%2)==0){    
-    #pragma unroll 1000
+    #pragma unroll 100
     for(uint64_t k=0; k<iterations;k++) {
 	Value1=I1*A[i];
 	Value3=I2*B[i];

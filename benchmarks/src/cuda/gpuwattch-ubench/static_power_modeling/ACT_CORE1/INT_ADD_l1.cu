@@ -77,7 +77,7 @@ __global__ void PowerKernal2(const unsigned* A, const unsigned* B, unsigned* C, 
 
 
 if((i%32)<div){
-#pragma unroll 1000
+#pragma unroll 100
     // Excessive Addition access
     for(uint64_t k=0; k<N;k++) {
 

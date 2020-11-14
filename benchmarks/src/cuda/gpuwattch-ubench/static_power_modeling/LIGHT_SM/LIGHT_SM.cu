@@ -68,7 +68,7 @@ __global__ void PowerKernal2(const float* A, const float* B, float* C, int N, in
     
 
     if((i%32)<div){
-      #pragma unroll 1000
+      #pragma unroll 100
       for(uint32_t i=0; i<iterations; ++i) {	
   		  asm volatile ("nanosleep.u32 1000;");
   	  }
