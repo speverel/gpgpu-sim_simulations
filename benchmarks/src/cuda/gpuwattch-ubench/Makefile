@@ -12,6 +12,17 @@ hysoonkim: common
 tensor_benchmarks: common
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C tensor_benchmarks/TENSOR/$(OPT)
 
+static_power_benchmarks: common
+	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C static_power_modeling/ACT_CORE1/$(OPT)
+	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C static_power_modeling/ACT_CORE2/$(OPT)
+	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C static_power_modeling/INT_STATIC/$(OPT)
+	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C static_power_modeling/INT_FP_STATIC/$(OPT)
+	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C static_power_modeling/INT_FP_DP_STATIC/$(OPT)
+	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C static_power_modeling/INT_FP_TENSOR_STATIC/$(OPT)
+	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C static_power_modeling/INT_FP_TEX_STATIC/$(OPT)
+	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C static_power_modeling/INT_FP_SFU_STATIC/$(OPT)
+	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C static_power_modeling/LIGHT_SM/$(OPT)
+	
 branching_benchmarks: common
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C branching_benchmarks/BE_SP_INT_ADD_l1/$(OPT)
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C branching_benchmarks/BE_SP_INT_ADD_l4/$(OPT)
@@ -125,9 +136,9 @@ memories_benchmarks: common
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C memories_benchmarks/BE_L2D_HIT/$(OPT)
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C memories_benchmarks/BE_MEM_DRAM_Acss/$(OPT)
 	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C memories_benchmarks/BE_TEXTURE_ACCESS_2/$(OPT)
-	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C memories_benchmarks/FE_IL0_HIT/$(OPT)
-	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C memories_benchmarks/FE_IL1_HIT/$(OPT)
-	$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C memories_benchmarks/FE_IL1_MISS/$(OPT)
+	#$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C memories_benchmarks/FE_IL0_HIT/$(OPT)
+	#$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C memories_benchmarks/FE_IL1_HIT/$(OPT)
+	#$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C memories_benchmarks/FE_IL1_MISS/$(OPT)
 	#$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C memories_benchmarks/l1d_stress/$(OPT)
 	#$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C memories_benchmarks/l1r1/$(OPT)
 	#$(SETENV) make $(MAKE_ARGS) noinline=$(noinline) -C memories_benchmarks/l1r2/$(OPT)
@@ -307,6 +318,17 @@ cleanactive_cores: common
 cleantensor: common
 	$(SETENV) make $(MAKE_ARGS) clean -C tensor_benchmarks/TENSOR/$(OPT)   
 
+cleanstatic: common
+	$(SETENV) make $(MAKE_ARGS) clean -C static_power_modeling/ACT_CORE1/$(OPT)
+	$(SETENV) make $(MAKE_ARGS) clean -C static_power_modeling/ACT_CORE2/$(OPT)
+	$(SETENV) make $(MAKE_ARGS) clean -C static_power_modeling/INT_STATIC/$(OPT)
+	$(SETENV) make $(MAKE_ARGS) clean -C static_power_modeling/INT_FP_STATIC/$(OPT)
+	$(SETENV) make $(MAKE_ARGS) clean -C static_power_modeling/INT_FP_DP_STATIC/$(OPT)
+	$(SETENV) make $(MAKE_ARGS) clean -C static_power_modeling/INT_FP_TENSOR_STATIC/$(OPT)
+	$(SETENV) make $(MAKE_ARGS) clean -C static_power_modeling/INT_FP_TEX_STATIC/$(OPT)
+	$(SETENV) make $(MAKE_ARGS) clean -C static_power_modeling/INT_FP_SFU_STATIC/$(OPT)
+	$(SETENV) make $(MAKE_ARGS) clean -C static_power_modeling/LIGHT_SM/$(OPT)
+
 cleanfunctional: common
 	$(SETENV) make $(MAKE_ARGS) clean -C functional_benchmarks/REG_FILE/$(OPT)
 	$(SETENV) make $(MAKE_ARGS) clean -C functional_benchmarks/BE_SP_INT_ADD/$(OPT)
@@ -473,5 +495,5 @@ clean-visualizer:
 power: power_apps
 
 
-power_apps: active_cores branching_benchmarks dram_benchmarks functional_benchmarks memories_benchmarks mix_benchmarks tensor_benchmarks
-cleanpower: cleanactive_cores cleanbranching cleandram cleanfunctional cleanmemories cleanmix
+power_apps: branching_benchmarks dram_benchmarks functional_benchmarks memories_benchmarks mix_benchmarks tensor_benchmarks static_power_benchmarks
+cleanpower: cleanbranching cleandram cleanfunctional cleanmemories cleanmix cleanstatic

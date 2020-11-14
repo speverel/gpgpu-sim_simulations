@@ -71,7 +71,7 @@ __global__ void PowerKernal2(const float* A, const float* B, float* C, int N, un
 //    if(((i%32)<=31))
     {
     #pragma unroll 100
-    for(int k=0; k<iterations;k++) {
+    for(unsigned long k=0; k<iterations;k++) {
 	Value1=I1*A[i];
 	Value3=I2*B[i];
 	Value1*=Value2;

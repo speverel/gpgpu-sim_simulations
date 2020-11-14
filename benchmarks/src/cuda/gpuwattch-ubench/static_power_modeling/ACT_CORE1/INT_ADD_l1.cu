@@ -13,9 +13,8 @@
 
 // includes CUDA
 #include <cuda_runtime.h>
-
-#define THREADS_PER_BLOCK 256
-#define NUM_OF_BLOCKS 640
+#include<cuda.h>
+#define THREADS_PER_BLOCK 512
 //#define ITERATIONS 40
 
 // Variables
@@ -65,7 +64,7 @@ inline void __getLastCudaError(const char *errorMessage, const char *file, const
 
 
 
-__global__ void PowerKernal2(const unsigned* A, const unsigned* B, unsigned* C, int N)
+__global__ void PowerKernal2(const unsigned* A, const unsigned* B, unsigned* C, uint64_t N, int div)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     //Do Some Computation
@@ -76,24 +75,27 @@ __global__ void PowerKernal2(const unsigned* A, const unsigned* B, unsigned* C, 
     unsigned I1=A[i];
     unsigned I2=B[i];
 
+
+if((i%32)<div){
 #pragma unroll 1000
     // Excessive Addition access
-    for(unsigned k=0; k<N;k++) {
+    for(uint64_t k=0; k<N;k++) {
 
-	Value2= I1+I2;
-	Value3=I1-I2;
-	Value1-=Value2;
-	Value3+=Value1;
-	Value2-=Value3;
-	Value1+=Value3;
+      Value1=I1+I2;
+      Value3=I1-I2;
+      Value1+=Value2;
+      Value1+=Value2;
+      Value2=Value3-Value1;
+      Value1=Value2+Value3;
 
-//	Value2= I1+I2;
-//	Value3=I1-I2;
-//	Value1=I1-Value2;
-//	Value3+=Value1;
-//	Value2-=Value3;
-//	Value1+=Value3;
+  // Value2= I1+I2;
+  // Value3=I1-I2;
+  // Value1-=Value2;
+  // Value3+=Value1;
+  // Value2-=Value3;
+  // Value1+=Value3;
     }
+}
     __syncthreads();
  
     Value=Value1;
@@ -106,17 +108,21 @@ __global__ void PowerKernal2(const unsigned* A, const unsigned* B, unsigned* C, 
 
 int main(int argc, char** argv)
 {
- int iterations;
- if(argc!=2) {
-   fprintf(stderr,"usage: %s #iterations\n",argv[0]);
-   exit(1);
- }
- else {
-   iterations = atoi(argv[1]);
- }
+  uint64_t iterations;
+  unsigned blocks;
+  int div;
+  if (argc != 4){
+    fprintf(stderr,"usage: %s #iterations #cores\n",argv[0]);
+    exit(1);
+  }
+  else {
+    iterations = atoll(argv[1]);
+    blocks = atoi(argv[2]);
+    div = atoi(argv[3]);
+  }
  
- printf("Power Microbenchmarks with iterations %d\n",iterations);
- int N = THREADS_PER_BLOCK*NUM_OF_BLOCKS;
+ printf("Power Microbenchmarks with iterations %llu\n",iterations);
+ int N = THREADS_PER_BLOCK*blocks;
  size_t size = N * sizeof(unsigned);
  // Allocate input vectors h_A and h_B in host memory
  h_A = (unsigned*)malloc(size);
@@ -145,13 +151,13 @@ int main(int argc, char** argv)
  checkCudaErrors(cudaEventCreate(&stop));
 
  //VecAdd<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C, N);
- dim3 dimGrid(NUM_OF_BLOCKS,1);
+ dim3 dimGrid(blocks,1);
  dim3 dimBlock(THREADS_PER_BLOCK,1);
  dim3 dimGrid2(1,1);
  dim3 dimBlock2(1,1);
 
  checkCudaErrors(cudaEventRecord(start));              
- PowerKernal2<<<dimGrid,dimBlock>>>(d_A, d_B, d_C, iterations);  
+ PowerKernal2<<<dimGrid,dimBlock>>>(d_A, d_B, d_C, iterations, div);  
  checkCudaErrors(cudaEventRecord(stop));               
  
  checkCudaErrors(cudaEventSynchronize(stop));           
