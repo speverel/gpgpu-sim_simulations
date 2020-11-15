@@ -1,156 +1,195 @@
-//This benchmark measures the maximum read bandwidth of GPU memory
-//Compile this file using the following command to disable L1 cache:
-//    nvcc -Xptxas -dlcm=cg -Xptxas -dscm=wt l2_bw.cu
-
-//This code have been tested on Volta V100 architecture
-//You can check the mem BW from the NVPROF (dram_read_throughput+dram_write_throughput)
-
 #include <stdio.h>
 #include <stdlib.h>
-#include <cuda.h>
+//#include <cutil.h>
+//#include <mgp.h>
+// Includes
+//#include <stdio.h>
+//#include "../include/ContAcq-IntClk.h"
 
-#define BLOCKS_NUM 160
-#define THREADS_NUM 1024 //thread number/block
-#define TOTAL_THREADS (BLOCKS_NUM*THREADS_NUM)
-#define ARRAY_SIZE 8388608   //Array size has to exceed L2 size to avoid L2 cache residence
-#define WARP_SIZE 32 
-#define L2_SIZE 1572864 //number of floats L2 can store
-#define clock_freq_MHZ 1132
+// includes, project
+//#include "../include/sdkHelper.h"  // helper for shared functions common to CUDA SDK samples
+//#include <shrQATest.h>
+//#include <shrUtils.h>
 
-// GPU error check
-#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
-inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true){
-  if (code != cudaSuccess) {
-    fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
-    if (abort) exit(code);
+// includes CUDA
+#include <cuda_runtime.h>
+
+#define THREADS_PER_BLOCK 256
+#define NUM_OF_BLOCKS 640
+#define NUM_SM 80
+#define LINE_SIZE   64
+#define SETS    4096
+#define ASSOC   18
+#define NUMTHREADS THREADS_PER_BLOCK*NUM_OF_BLOCKS
+#define ITERATIONS 100
+
+// Variables
+unsigned* h_A;
+unsigned* h_B;
+unsigned* h_C;
+unsigned* d_A;
+unsigned* d_B;
+unsigned* d_C;
+//bool noprompt = false;
+//unsigned int my_timer;
+
+// Functions
+void CleanupResources(void);
+void RandomInit(unsigned*, unsigned long);
+//void ParseArguments(int, char**);
+
+////////////////////////////////////////////////////////////////////////////////
+// These are CUDA Helper functions
+
+// This will output the proper CUDA error strings in the event that a CUDA host call returns an error
+#define checkCudaErrors(err)  __checkCudaErrors (err, __FILE__, __LINE__)
+
+inline void __checkCudaErrors(cudaError err, const char *file, const int line )
+{
+  if(cudaSuccess != err){
+  fprintf(stderr, "%s(%i) : CUDA Runtime API error %d: %s.\n",file, line, (int)err, cudaGetErrorString( err ) );
+   exit(-1);
   }
 }
 
-/*
-Four Vector Addition using flost4 types
-Send as many as float4 read requests on the flight to increase Row buffer locality of DRAM and hit the max BW
- */
+// This will output the proper error string when calling cudaGetLastError
+#define getLastCudaError(msg)      __getLastCudaError (msg, __FILE__, __LINE__)
 
-__global__ void mem_bw (float* A,  float* B, float* C, float* D, float* E, float* F, uint32_t *startClk, uint32_t *stopClk, uint64_t iterations){
-  // block and thread index
-  int idx = blockIdx.x * blockDim.x + threadIdx.x;
+inline void __getLastCudaError(const char *errorMessage, const char *file, const int line )
+{
+  cudaError_t err = cudaGetLastError();
+  if (cudaSuccess != err){
+  fprintf(stderr, "%s(%i) : getLastCudaError() CUDA error : %s : (%d) %s.\n",file, line, errorMessage, (int)err, cudaGetErrorString( err ) );
+  exit(-1);
+  }
+}
 
-  // synchronize all threads
-  asm volatile ("bar.sync 0;");
+// end of CUDA Helper Functions
 
-  // start timing
-  uint32_t start = 0;
-  asm volatile ("mov.u32 %0, %%clock;" : "=r"(start) :: "memory");
 
-  #pragma unroll 100
-  for(uint64_t j = 0; j<iterations; j++){
-    for(int i = idx; i < ARRAY_SIZE/4; i += blockDim.x * gridDim.x) {
-      float4 a1 = reinterpret_cast<float4*>(A)[i];
-      float4 b1 = reinterpret_cast<float4*>(B)[i];
-      float4 d1 = reinterpret_cast<float4*>(D)[i];
-      float4 e1 = reinterpret_cast<float4*>(E)[i];
-      float4 f1 = reinterpret_cast<float4*>(F)[i];
-      float4 c1;
 
-      c1.x = a1.x + b1.x + d1.x + e1.x + f1.x;
-      c1.y = a1.y + b1.y + d1.y + e1.y + f1.y;
-      c1.z = a1.z + b1.z + d1.z + e1.z + f1.z;
-      c1.w = a1.w + b1.w + d1.w + e1.w + f1.w;
+__global__ void PowerKernal2( unsigned* A, unsigned* B, int N)
+{
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
 
-      reinterpret_cast<float4*>(C)[i] = c1;
+    unsigned load_value;
+  //unsigned sum_value = 0;
+  // unsigned * loadAddr = &A[i];
+  //   unsigned * storeAddr = &B[i];
+    unsigned size_l2 = (LINE_SIZE*ASSOC*SETS);
+    unsigned stride = size_l2/sizeof(unsigned) -1;
+    #pragma unroll 100
+    for(unsigned iterations=0; iterations<N;iterations++) {    
+        unsigned * loadAddr = &A[i];
+        unsigned * storeAddr = &B[i];
+        #pragma unroll 10
+       for(unsigned k =0; k<ITERATIONS; k++){
+        __asm volatile(
+          "ld.global.cv.u32 %0, [%1];" 
+          : "=r"(load_value) : "l"((unsigned long)(loadAddr))
+        );
+        //__asm volatile("add.u32 %0, %0, %1;" : "+r"(sum_value) : "r"(load_value));
+        __asm volatile(
+          "st.global.wt.u32 [%0], %1;"
+          : : "l"((unsigned long)(storeAddr)), "r"(load_value) 
+        );
+        loadAddr = loadAddr + stride;
+        storeAddr = storeAddr + stride;
+       }
     }
-  }
-  // synchronize all threads
+    //B[i] = sum_value;
+    __syncthreads();
 
-  // synchronize all threads
-  asm volatile ("bar.sync 0;");
-
-  // stop timing
-  uint32_t stop = 0;
-  asm volatile("mov.u32 %0, %%clock;" : "=r"(stop) :: "memory");
-
-  // write time and data back to memory
-  startClk[idx] = start;
-  stopClk[idx] = stop;
 }
 
-int main(int argc, char** argv){
-  uint64_t iterations;
-  if (argc != 2){
-    fprintf(stderr,"usage: %s #iterations #cores #ActiveThreadsperWarp\n",argv[0]);
-    exit(1);
+
+int main(int argc, char** argv)
+{
+ int iterations;
+ if(argc!=2) {
+   fprintf(stderr,"usage: %s #iterations\n",argv[0]);
+   exit(1);
+ }
+ else {
+   iterations = atoi(argv[1]);
+ }
+ 
+ printf("Power Microbenchmarks with iterations %d\n",iterations);
+
+ unsigned long size_l2 = (LINE_SIZE*ASSOC*SETS);
+ unsigned long N = size_l2*ITERATIONS;
+ size_t size = N * sizeof(unsigned);
+ // Allocate input vectors h_A and h_B in host memory
+ h_A = (unsigned*)malloc(size);
+ if (h_A == 0) CleanupResources();
+ h_B = (unsigned*)malloc(size);
+ if (h_B == 0) CleanupResources();
+
+
+ // Initialize input vectors
+ RandomInit(h_A, N);
+
+
+ // Allocate vectors in device memory
+ checkCudaErrors( cudaMalloc((void**)&d_A, size) );
+ checkCudaErrors( cudaMalloc((void**)&d_B, size) );
+
+
+ // Copy vector from host memory to device memory
+ checkCudaErrors( cudaMemcpy(d_A, h_A, size, cudaMemcpyHostToDevice) );
+
+
+ cudaEvent_t start, stop;                   
+ float elapsedTime = 0;                     
+ checkCudaErrors(cudaEventCreate(&start));  
+ checkCudaErrors(cudaEventCreate(&stop));
+
+ //VecAdd<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C, N);
+ dim3 dimGrid(NUM_OF_BLOCKS,1);
+ dim3 dimBlock(THREADS_PER_BLOCK,1);
+
+
+ checkCudaErrors(cudaEventRecord(start));              
+ PowerKernal2<<<dimGrid,dimBlock>>>(d_A, d_B,iterations);  
+ checkCudaErrors(cudaEventRecord(stop));               
+ 
+ checkCudaErrors(cudaEventSynchronize(stop));           
+ checkCudaErrors(cudaEventElapsedTime(&elapsedTime, start, stop));  
+ printf("execution time = %.2f s\n", elapsedTime/1000);  
+ getLastCudaError("kernel launch failure");              
+ cudaThreadSynchronize(); 
+
+ // Copy result from device memory to host memory
+ // h_B contains the result in host memory
+ checkCudaErrors( cudaMemcpy(h_B, d_B, size, cudaMemcpyDeviceToHost) );
+  checkCudaErrors(cudaEventDestroy(start));
+ checkCudaErrors(cudaEventDestroy(stop));
+ CleanupResources();
+
+ return 0;
+}
+
+void CleanupResources(void)
+{
+  // Free device memory
+  if (d_A)
+  cudaFree(d_A);
+  if (d_B)
+  cudaFree(d_B);
+
+  // Free host memory
+  if (h_A)
+  free(h_A);
+  if (h_B)
+  free(h_B);
+
+}
+
+// Allocates an array with random float entries.
+void RandomInit(unsigned* data, unsigned long n)
+{
+  for (unsigned long i = 0; i < n; ++i){
+  //srand((unsigned)time(0));  
+  data[i] = i;
   }
-  else {
-    iterations = atoll(argv[1]);
-  }
-  uint32_t *startClk = (uint32_t*) malloc(TOTAL_THREADS*sizeof(uint32_t));
-  uint32_t *stopClk = (uint32_t*) malloc(TOTAL_THREADS*sizeof(uint32_t));
-  float *A = (float*) malloc(ARRAY_SIZE*sizeof(float));
-  float *B = (float*) malloc(ARRAY_SIZE*sizeof(float));
-  float *C = (float*) malloc(ARRAY_SIZE*sizeof(float));
-  float *D = (float*) malloc(ARRAY_SIZE*sizeof(float));
-  float *E = (float*) malloc(ARRAY_SIZE*sizeof(float));
-  float *F = (float*) malloc(ARRAY_SIZE*sizeof(float));
-
-
-  uint32_t *startClk_g;
-  uint32_t *stopClk_g;
-  float *A_g;
-  float *B_g;
-  float *C_g;
-  float *D_g;
-  float *E_g;
-  float *F_g;
-
-
-  for (uint32_t i=0; i<ARRAY_SIZE; i++){
-    A[i] = (float)i;
-    B[i] = (float)i;
-    D[i] = (float)i;
-    E[i] = (float)i;
-    F[i] = (float)i;
-
-  }
-
-  gpuErrchk( cudaMalloc(&startClk_g, TOTAL_THREADS*sizeof(uint32_t)) );
-  gpuErrchk( cudaMalloc(&stopClk_g, TOTAL_THREADS*sizeof(uint32_t)) );
-  gpuErrchk( cudaMalloc(&A_g, ARRAY_SIZE*sizeof(float)) );
-  gpuErrchk( cudaMalloc(&B_g, ARRAY_SIZE*sizeof(float)) );
-  gpuErrchk( cudaMalloc(&C_g, ARRAY_SIZE*sizeof(float)) );
-  gpuErrchk( cudaMalloc(&D_g, ARRAY_SIZE*sizeof(float)) );
-  gpuErrchk( cudaMalloc(&E_g, ARRAY_SIZE*sizeof(float)) );
-  gpuErrchk( cudaMalloc(&F_g, ARRAY_SIZE*sizeof(float)) );
-
-
-  gpuErrchk( cudaMemcpy(A_g, A, ARRAY_SIZE*sizeof(float), cudaMemcpyHostToDevice) );
-  gpuErrchk( cudaMemcpy(B_g, B, ARRAY_SIZE*sizeof(float), cudaMemcpyHostToDevice) );
-  gpuErrchk( cudaMemcpy(D_g, D, ARRAY_SIZE*sizeof(float), cudaMemcpyHostToDevice) );
-  gpuErrchk( cudaMemcpy(E_g, E, ARRAY_SIZE*sizeof(float), cudaMemcpyHostToDevice) );
-  gpuErrchk( cudaMemcpy(F_g, F, ARRAY_SIZE*sizeof(float), cudaMemcpyHostToDevice) );
-
-  cudaEvent_t start, stop;
-  cudaEventCreate(&start);
-  cudaEventCreate(&stop);
-  cudaEventRecord(start);
-
-  mem_bw<<<BLOCKS_NUM,THREADS_NUM>>>(A_g, B_g, C_g, D_g, E_g, F_g, startClk_g, stopClk_g,iterations);
-  cudaEventRecord(stop);
-  cudaEventSynchronize(stop);
-
-  gpuErrchk( cudaPeekAtLastError() );
-
-  gpuErrchk( cudaMemcpy(startClk, startClk_g, TOTAL_THREADS*sizeof(uint32_t), cudaMemcpyDeviceToHost) );
-  gpuErrchk( cudaMemcpy(stopClk, stopClk_g, TOTAL_THREADS*sizeof(uint32_t), cudaMemcpyDeviceToHost) );
-  gpuErrchk( cudaMemcpy(C, C_g, ARRAY_SIZE*sizeof(float), cudaMemcpyDeviceToHost) );
-
-  float mem_bw;
-  float milliseconds = 0;
-  cudaEventElapsedTime(&milliseconds, start, stop);
-
-  unsigned N = ARRAY_SIZE * 6 * 4; //6 arrays of floats types
-
-  mem_bw = (float)(N)/((float)(stopClk[0]-startClk[0]));  
-  printf("Mem BW= %f (Byte/Clk)\n", mem_bw);
-  printf("Mem BW= %f (GB/sec)\n", (float)N/milliseconds/1e6);
-  printf("Total Clk number = %u \n", stopClk[0]-startClk[0]);
 }
