@@ -12,7 +12,7 @@
 // includes CUDA
 #include <cuda_runtime.h>
 
-#define THREADS_PER_BLOCK 256
+#define THREADS_PER_BLOCK 1024
 
 // Variables
 float* h_A;

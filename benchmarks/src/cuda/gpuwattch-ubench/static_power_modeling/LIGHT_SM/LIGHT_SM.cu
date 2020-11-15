@@ -55,7 +55,7 @@ inline void __getLastCudaError(const char *errorMessage, const char *file, const
 }
 
 // end of CUDA Helper Functions
-__global__ void PowerKernal2(const float* A, const float* B, float* C, int N, int iterations, int div)
+__global__ void PowerKernal2(const float* A, const float* B, float* C, int N, unsigned iterations, int div)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     //Do Some Computation
@@ -69,7 +69,7 @@ __global__ void PowerKernal2(const float* A, const float* B, float* C, int N, in
 
     if((i%32)<div){
       #pragma unroll 100
-      for(uint32_t i=0; i<iterations; ++i) {	
+      for(unsigned i=0; i<iterations; ++i) {	
   		  asm volatile ("nanosleep.u32 1000;");
   	  }
     }
@@ -82,7 +82,7 @@ __global__ void PowerKernal2(const float* A, const float* B, float* C, int N, in
 
 int main(int argc, char** argv)
 {
-  uint64_t iterations;
+  unsigned iterations;
   int blocks;
   int div;
   if (argc != 4){
@@ -90,12 +90,12 @@ int main(int argc, char** argv)
     exit(1);
   }
   else {
-    iterations = atoll(argv[1]);
+    iterations = atoi(argv[1]);
     blocks = atoi(argv[2]);
     div = atoi(argv[3]);
   }
  
- printf("Power Microbenchmarks with iterations %lu\n",iterations);
+ printf("Power Microbenchmarks with iterations %u\n",iterations);
  int N = THREADS_PER_BLOCK*blocks;
  size_t size = N * sizeof(float);
  // Allocate input vectors h_A and h_B in host memory

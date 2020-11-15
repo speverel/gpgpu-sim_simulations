@@ -64,7 +64,7 @@ inline void __getLastCudaError(const char *errorMessage, const char *file, const
 
 
 // Device code
-__global__ void PowerKernal1(const double* A, const double* B, double* C, unsigned long long iterations)
+__global__ void PowerKernal1(const double* A, const double* B, double* C, unsigned iterations)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     //Do Some Computation
@@ -76,7 +76,7 @@ __global__ void PowerKernal1(const double* A, const double* B, double* C, unsign
     double I2=B[i];
 #pragma unroll 1000
     // Excessive Addition access
-    for(unsigned long long k=0; k<iterations;k++) {
+    for(unsigned k=0; k<iterations;k++) {
     	Value1=I1+I2;
     	Value3=I1-I2;
     	Value1+=Value2;
@@ -93,18 +93,18 @@ __global__ void PowerKernal1(const double* A, const double* B, double* C, unsign
 
 int main(int argc, char** argv)
 {
-  unsigned long long iterations;
+  unsigned iterations;
   unsigned blocks;
   if (argc != 3){
     fprintf(stderr,"usage: %s #iterations #cores\n",argv[0]);
     exit(1);
   }
   else {
-    iterations = atoll(argv[1]);
+    iterations = atoi(argv[1]);
     blocks = atoi(argv[2]);
   }
 
- printf("Power Microbenchmarks with iterations %llu\n",iterations);
+ printf("Power Microbenchmarks with iterations %lu\n",iterations);
  int N = THREADS_PER_BLOCK*blocks;
  size_t size = N * sizeof(double);
  // Allocate input vectors h_A and h_B in host memory

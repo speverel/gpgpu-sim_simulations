@@ -14,7 +14,7 @@
 // includes CUDA
 #include <cuda_runtime.h>
 #include<cuda.h>
-#define THREADS_PER_BLOCK 512
+#define THREADS_PER_BLOCK 1024
 //#define ITERATIONS 40
 
 // Variables
@@ -64,7 +64,7 @@ inline void __getLastCudaError(const char *errorMessage, const char *file, const
 
 
 
-__global__ void PowerKernal2(const unsigned* A, const unsigned* B, unsigned* C, uint64_t N, int div)
+__global__ void PowerKernal2(const unsigned* A, const unsigned* B, unsigned* C, unsigned N, int div)
 {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     //Do Some Computation
@@ -79,7 +79,7 @@ __global__ void PowerKernal2(const unsigned* A, const unsigned* B, unsigned* C, 
 if((i%32)<div){
 #pragma unroll 100
     // Excessive Addition access
-    for(uint64_t k=0; k<N;k++) {
+    for(unsigned k=0; k<N;k++) {
 
       Value1=I1+I2;
       Value3=I1-I2;
@@ -108,7 +108,7 @@ if((i%32)<div){
 
 int main(int argc, char** argv)
 {
-  uint64_t iterations;
+  unsigned iterations;
   unsigned blocks;
   int div;
   if (argc != 4){
@@ -116,7 +116,7 @@ int main(int argc, char** argv)
     exit(1);
   }
   else {
-    iterations = atoll(argv[1]);
+    iterations = atoi(argv[1]);
     blocks = atoi(argv[2]);
     div = atoi(argv[3]);
   }

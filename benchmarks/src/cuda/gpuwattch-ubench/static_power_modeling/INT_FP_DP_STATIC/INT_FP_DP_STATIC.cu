@@ -16,7 +16,7 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 
 
 
-__global__ void power_microbench(float *data1, double *data2, uint32_t *data3, uint32_t *data4, float *res, int div, uint64_t iterations) {
+__global__ void power_microbench(float *data1, double *data2, uint32_t *data3, uint32_t *data4, float *res, int div, unsigned iterations) {
 
   int gid = blockIdx.x*blockDim.x + threadIdx.x;
   register float s1 = data1[gid];
@@ -34,7 +34,7 @@ __global__ void power_microbench(float *data1, double *data2, uint32_t *data3, u
   if((gid%32)<div){
   //ROI
     #pragma unroll 100
-    for (uint64_t j=0 ; j<iterations ; ++j) {
+    for (unsigned j=0 ; j<iterations ; ++j) {
       asm volatile ("{\t\n"
           "add.f32 %0, %1, %0;\n\t"
           "add.f64 %4, %5, %4;\n\t"
@@ -62,7 +62,7 @@ __global__ void power_microbench(float *data1, double *data2, uint32_t *data3, u
 }
 
 int main(int argc, char** argv){
-  uint64_t iterations;
+  unsigned iterations;
   int blocks;
   int div;
   if (argc != 4){
@@ -70,12 +70,12 @@ int main(int argc, char** argv){
     exit(1);
   }
   else {
-    iterations = atoll(argv[1]);
+    iterations = atoi(argv[1]);
     blocks = atoi(argv[2]);
     div = atoi(argv[3]);
   }
  
- printf("Power Microbenchmarks with iterations %lu\n",iterations);
+ printf("Power Microbenchmarks with iterations %u\n",iterations);
  int total_threads = THREADS_PER_BLOCK*blocks;
 
 
