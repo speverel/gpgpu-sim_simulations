@@ -121,6 +121,13 @@ __global__ void convertFp32ToFp16 (half *out, float *in, int n) {
    }
 }
 
+void RandomInit_fp(float* data, int n)
+{
+   for (int i = 0; i < n; ++i){
+   data[i] = rand() / RAND_MAX;
+   }
+}
+
 int main(int argc, char** argv){
   uint64_t iterations;
   int blocks;
@@ -203,20 +210,22 @@ int main(int argc, char** argv){
 
   c_host_wmma = (float*)malloc(MATRIX_M * MATRIX_N * sizeof(float));
 
-  curandErrCheck(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT));
-  curandErrCheck(curandSetPseudoRandomGeneratorSeed(gen, 1337ULL));
 
-  curandErrCheck(curandGenerateUniform(gen, a_fp32, MATRIX_M * MATRIX_K));
-  curandErrCheck(curandGenerateUniform(gen, b_fp32, MATRIX_K * MATRIX_N));
-
+   float *a_fp32_h = (float*) malloc(MATRIX_M * MATRIX_K*sizeof(float));
+   float *b_fp32_h = (float*) malloc(MATRIX_K * MATRIX_N*sizeof(float));
+   float *c_h = (float*) malloc(MATRIX_M * MATRIX_N*sizeof(float));
+   RandomInit_fp(a_fp32_h, MATRIX_M * MATRIX_K);
+   RandomInit_fp(b_fp32_h, MATRIX_K * MATRIX_N);
+   RandomInit_fp( c_h, MATRIX_M * MATRIX_N);
+   cudaErrCheck(cudaMemcpy(c, c_h, MATRIX_M * MATRIX_N * sizeof(float), cudaMemcpyHostToDevice));
+   cudaErrCheck(cudaMemcpy(a_fp32, a_fp32_h, MATRIX_M * MATRIX_K * sizeof(float), cudaMemcpyHostToDevice));
+   cudaErrCheck(cudaMemcpy(b_fp32, b_fp32_h, MATRIX_K * MATRIX_N * sizeof(float), cudaMemcpyHostToDevice));
 
   // curand doesn't currently support fp16 so we generate in fp32 and convert to fp16.
   convertFp32ToFp16 <<< (MATRIX_M * MATRIX_K + 255) / 256, 256 >>> (a_fp16, a_fp32, MATRIX_M * MATRIX_K);
   convertFp32ToFp16 <<< (MATRIX_K * MATRIX_N + 255) / 256, 256 >>> (b_fp16, b_fp32, MATRIX_K * MATRIX_N);
 
-  curandErrCheck(curandGenerateUniform(gen, c, MATRIX_M * MATRIX_N));
 
-  curandErrCheck(curandDestroyGenerator(gen));
 
   cudaErrCheck(cudaMemcpy(c_wmma, c, MATRIX_M * MATRIX_N * sizeof(float), cudaMemcpyDeviceToDevice));
 
