@@ -103,7 +103,7 @@ __global__ void power_microbench(float *data1, float *data2, uint32_t *data3, ui
             "mad.lo.u32 %3, %3, %3 , %2;\n\t"
             "}" : "+f"(Value1),"+f"(s1),"+r"(s3),"+r"(Value2)
         );
-        Value3 += tex1Dfetch(texmem1,Value2%gid);
+        Value3 += tex1Dfetch(texmem1,Value2%(gid+1));
         // Value3 += tex1Dfetch(texmem2,Value2%gid);
         // Value3 += tex1Dfetch(texmem3,Value2%gid);
         // Value3 += tex1Dfetch(texmem4,Value2%gid);
