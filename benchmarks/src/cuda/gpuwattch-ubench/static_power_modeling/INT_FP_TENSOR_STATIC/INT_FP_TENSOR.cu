@@ -124,7 +124,7 @@ __global__ void convertFp32ToFp16 (half *out, float *in, int n) {
 void RandomInit_fp(float* data, int n)
 {
    for (int i = 0; i < n; ++i){
-   data[i] = rand() / RAND_MAX;
+   data[i] = (float)rand() / RAND_MAX;
    }
 }
 
